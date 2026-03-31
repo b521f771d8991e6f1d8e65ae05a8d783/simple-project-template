@@ -19,7 +19,7 @@ FROM development AS build
 
 WORKDIR /build
 COPY package.json package-lock.json .
-RUN cd typescript && npm install
+RUN npm install
 COPY . .
 RUN --mount=type=cache,target=/build/rust/target \
     --mount=type=cache,target=~/.cargo \
