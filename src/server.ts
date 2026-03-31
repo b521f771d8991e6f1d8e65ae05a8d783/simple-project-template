@@ -10,7 +10,7 @@ import path from "path";
 
 import { spawn } from "child_process";
 import { createRequestHandler } from "expo-server/adapter/express";
-import { getDatabase, getDatabaseLocation } from "./server/db";
+import { createDatabase, getDatabaseLocation } from "./server/db.node";
 
 const cpus = os.cpus().length;
 
@@ -46,7 +46,7 @@ if (!("DISABLE_CLUSTER" in process.env) && cluster.isPrimary) {
     if ("LITESTREAM_URL" in process.env) {
         // TODO make the exit more robust
         console.log("Trying to start Litestream");
-        getDatabase(); // ensure DB exists
+        createDatabase(); // ensure DB exists
 
         const ls = spawn(
             "litestream",

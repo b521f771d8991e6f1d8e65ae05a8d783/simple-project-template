@@ -7,7 +7,7 @@
     "dev:ios": "expo start --ios",
     "dev:web": "expo start --web",
     "build:server": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify",
-    "build:worker": "esbuild src/server.ts --outfile=./dist/worker.js --platform=node --bundle --minify --format=esm",
+    "build:worker": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --minify --format=esm",
     "build:web": "expo export --platform web && npm run build:server && npm run build:worker",
     "lint": "expo lint"
   },

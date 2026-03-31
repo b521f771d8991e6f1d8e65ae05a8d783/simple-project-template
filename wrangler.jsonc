@@ -1,9 +1,10 @@
 {
     // Cloudflare Workers deployment
-    // Build: `nix build .#cloudflare` — skipped in CI (set SKIP_NIX_BUILD=1) since the artifact is pre-built
+    // Worker JS is bundled by wrangler from src/worker.ts.
+    // Static assets come from the nix build (.#cloudflare → result/assets) — skipped in CI via SKIP_NIX_BUILD=1.
     "$schema": "node_modules/wrangler/config-schema.json",
     "name": "web-app",
-    "main": "result/worker.js",
+    "main": "src/worker.ts",
     "compatibility_date": "2026-03-01",
     "compatibility_flags": [
         "nodejs_compat"

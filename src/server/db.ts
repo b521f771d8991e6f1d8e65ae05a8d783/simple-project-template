@@ -1,24 +1,14 @@
-import fs from "node:fs";
-import path from "node:path";
-import sqlite from "node:sqlite";
+// Platform-agnostic database interface.
+// Use a platform-specific implementation (e.g. db.node.ts, db.d1.ts) to obtain an instance.
 
-export function getDatabaseLocation() {
-    return path.resolve(process.cwd(), "data.db");
+export interface PreparedStatement<T = unknown> {
+    run(...params: unknown[]): Promise<void>;
+    get(...params: unknown[]): Promise<T | undefined>;
+    all(...params: unknown[]): Promise<T[]>;
 }
 
-export function getDatabase() {
-    const dbPath = getDatabaseLocation();
-    const isNew = !fs.existsSync(dbPath);
-    const db = new sqlite.DatabaseSync(dbPath);
-    db.exec("PRAGMA journal_mode = WAL;");
-    db.exec("PRAGMA synchronous = NORMAL;");
-    db.exec("PRAGMA foreign_keys = ON;");
-
-    if (isNew) {
-        const schemaPath = path.resolve(process.cwd(), "database.sql");
-        const schema = fs.readFileSync(schemaPath, "utf-8");
-        db.exec(schema);
-    }
-
-    return db;
+export interface Database {
+    exec(sql: string): Promise<void>;
+    prepare<T = unknown>(sql: string): PreparedStatement<T>;
+    close(): void;
 }
