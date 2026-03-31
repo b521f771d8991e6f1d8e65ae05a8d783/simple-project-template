@@ -25,7 +25,7 @@ RUN npm install
 
 # cache rust
 COPY Cargo.lock Cargo.toml ./
-RUN mkdir src-rust && echo "fn main() {}" > src-rust/main.rs && cargo build --release && rm -rf src-rust
+RUN mkdir src-rust && echo "fn foo() {}" > src-rust/lib.rs && cargo build --release && rm -rf src-rust
 
 # copy the rest
 COPY . .
