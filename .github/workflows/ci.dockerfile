@@ -23,7 +23,6 @@ RUN npm install
 COPY . .
 RUN --mount=type=cache,target=~/.cargo \
     --mount=type=cache,target=/build/target \
-    --mount=type=cache,target=/build/dist \
     --mount=type=cache,target=/build/.expo \
     --mount=type=cache,target=/tmp/metro-cache \
     cargo build && npm run build:web
