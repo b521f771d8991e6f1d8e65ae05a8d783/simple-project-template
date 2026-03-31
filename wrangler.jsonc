@@ -1,7 +1,7 @@
 {
     // Cloudflare Workers deployment — builds via nix
     // Deployed automatically via Cloudflare Git integration
-    "$schema": "https://cdn.jsdelivr.net/npm/wrangler/config-schema.json",
+    "$schema": "node_modules/wrangler/config-schema.json",
     "name": "web-app",
     "main": "result/worker.js",
     "compatibility_date": "2026-03-01",

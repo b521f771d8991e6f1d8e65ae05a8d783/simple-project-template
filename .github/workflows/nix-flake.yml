@@ -131,7 +131,7 @@ jobs:
   steps:
    - uses: actions/checkout@v6.0.2
 
-   - uses: actions/download-artifact@v4
+   - uses: actions/download-artifact@v8.0.1
      with:
       name: cloudflare
       path: result/
@@ -147,10 +147,11 @@ jobs:
       fi
 
    - name: Deploy to Cloudflare Workers
-     uses: cloudflare/wrangler-action@v3
+     uses: cloudflare/wrangler-action@v3.14.1
      with:
       apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      wranglerVersion: "4.79.0"
       command: deploy --name ${{ steps.worker.outputs.name }}
 
  cleanup-preview:
