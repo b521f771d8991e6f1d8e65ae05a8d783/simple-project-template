@@ -18,7 +18,7 @@ VOLUME /nix
 FROM development AS build
 
 WORKDIR /build
-COPY typescript/package.json typescript/package-lock.json typescript/
+COPY package.json package-lock.json .
 RUN cd typescript && npm install
 COPY . .
 RUN --mount=type=cache,target=/build/rust/target \
