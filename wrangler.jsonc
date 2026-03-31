@@ -12,7 +12,7 @@
         "directory": "result/assets"
     },
     "build": {
-        "command": "npm run build:web"
+        "command": "nix build .#cloudflare"
     },
     "observability": {
         "enabled": false,

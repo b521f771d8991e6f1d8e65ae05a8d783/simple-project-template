@@ -221,19 +221,7 @@
           '';
           buildPhase = ''
             runHook preBuild
-            # Expo static export → dist/
-            npx expo export --platform web
-            # Node.js server bundle (for Docker)
-            esbuild src/server.ts \
-              --outfile=dist/main.js \
-              --platform=node \
-              --bundle --minify
-            # Cloudflare Worker bundle
-            esbuild src/server.ts \
-              --outfile=dist/worker.js \
-              --platform=browser \
-              --bundle --minify --format=esm \
-              '--external:node:*'
+            npm run build:web
             runHook postBuild
           '';
           installPhase = ''
@@ -241,6 +229,7 @@
             mkdir -p $out/bin $out/worker/assets
             cp dist/main.js $out/bin/main.js
             cp dist/worker.js $out/worker/worker.js
+            # Expo static export assets (everything except the server bundles)
             cp -r dist/. $out/worker/assets/
             rm $out/worker/assets/main.js $out/worker/assets/worker.js
             runHook postInstall

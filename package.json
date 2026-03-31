@@ -6,7 +6,9 @@
     "dev:android": "expo start --android",
     "dev:ios": "expo start --ios",
     "dev:web": "expo start --web",
-    "build:web": "expo export --platform web && esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify",
+    "build:server": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify",
+    "build:worker": "esbuild src/server.ts --outfile=./dist/worker.js --platform=node --bundle --minify --format=esm",
+    "build:web": "expo export --platform web && npm run build:server && npm run build:worker",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -43,7 +45,8 @@
     "react-native-screens": "~4.16.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "wrangler": "^4.78.0"
   },
   "private": true
 }
