@@ -1,6 +1,6 @@
 {
-    // Cloudflare Workers deployment — builds via nix
-    // Deployed automatically via Cloudflare Git integration
+    // Cloudflare Workers deployment — artifact is pre-built by CI (nix build .#cloudflare)
+    // Deployed automatically via GitHub Actions
     "$schema": "node_modules/wrangler/config-schema.json",
     "name": "web-app",
     "main": "result/worker.js",
@@ -10,9 +10,6 @@
     ],
     "assets": {
         "directory": "result/assets"
-    },
-    "build": {
-        "command": "nix build .#cloudflare"
     },
     "observability": {
         "enabled": false,
