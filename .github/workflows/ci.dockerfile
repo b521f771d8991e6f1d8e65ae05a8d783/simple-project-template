@@ -9,11 +9,10 @@ RUN cargo install cargo-chef
 RUN groupadd --gid 1000 vscode \
     && useradd --uid 1000 --gid 1000 -m -s /bin/bash vscode \
     && echo "vscode ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/vscode \
-    && chmod 0440 /etc/sudoers.d/vscode
-
-RUN mkdir -p /etc/nix && \
-    echo 'extra-experimental-features = flakes nix-command' > /etc/nix/nix.conf && \
-    git config --system --add safe.directory /workspaces
+    && chmod 0440 /etc/sudoers.d/vscode \
+    && mkdir -p /etc/nix \
+    && echo 'extra-experimental-features = flakes nix-command' > /etc/nix/nix.conf \
+    && git config --system --add safe.directory /workspaces
 
 VOLUME /nix
 
