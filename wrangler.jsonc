@@ -1,6 +1,6 @@
 {
-    // Cloudflare Workers deployment — artifact is pre-built by CI (nix build .#cloudflare)
-    // Deployed automatically via GitHub Actions
+    // Cloudflare Workers deployment
+    // Build: `nix build .#cloudflare` — skipped in CI (set SKIP_NIX_BUILD=1) since the artifact is pre-built
     "$schema": "node_modules/wrangler/config-schema.json",
     "name": "web-app",
     "main": "result/worker.js",
@@ -10,6 +10,9 @@
     ],
     "assets": {
         "directory": "result/assets"
+    },
+    "build": {
+        "command": "[ \"$SKIP_NIX_BUILD\" = \"1\" ] || nix build .#cloudflare"
     },
     "observability": {
         "enabled": false,

@@ -153,6 +153,8 @@ jobs:
       accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       wranglerVersion: "4.79.0"
       command: deploy --name ${{ steps.worker.outputs.name }}
+     env:
+      SKIP_NIX_BUILD: "1"
 
  cleanup-preview:
   if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
