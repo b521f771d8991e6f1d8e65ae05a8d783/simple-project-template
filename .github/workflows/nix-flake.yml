@@ -1,8 +1,27 @@
+# Nix Flake CI/CD
+#
+# Jobs:
+#   ci-dockerfile   — builds the dev container Dockerfile to verify it is valid (no push)
+#   cleanup-images  — prunes old GHCR container images, keeping the 3 most recent
+#   build           — runs `nix build` on ubuntu-24.04, ubuntu-24.04-arm and macos-15:
+#                       • builds the default package + .#cloudflare
+#                       • builds and pushes the Docker image to GHCR (Linux only)
+#                       • uploads result/ as a per-OS artifact
+#                       • uploads result/ as the shared "cloudflare" artifact (ubuntu-24.04 only)
+#   deploy          — downloads the "cloudflare" artifact and deploys via wrangler:
+#                       • main  → production worker  (web-app)
+#                       • other → preview worker     (web-app-<branch>, workers.dev URL per branch)
+#   cleanup-preview — deletes the preview worker from Cloudflare when a branch is deleted
+#
+# Secrets required:
+#   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
+#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID
 name: Nix Flake ❄️
 on:
  workflow_dispatch:
  push:
  pull_request:
+ delete:
 
 jobs:
  ci-dockerfile:
@@ -72,7 +91,22 @@ jobs:
 
    - name: Build and test Nix Flake
      run: |
-      nix --extra-experimental-features "flakes nix-command" build .
+      nix --extra-experimental-features "flakes nix-command" build . .#cloudflare
+
+   - name: Upload Cloudflare artifact
+     if: matrix.os == 'ubuntu-24.04'
+     uses: actions/upload-artifact@v7.0.0
+     with:
+      name: cloudflare
+      path: result/
+      if-no-files-found: error
+
+   - name: Upload build result
+     uses: actions/upload-artifact@v7.0.0
+     with:
+      name: result-${{ matrix.os }}
+      path: result/
+      if-no-files-found: error
 
    - name: Push Docker image to GHCR
      if: runner.os == 'Linux'
@@ -88,3 +122,44 @@ jobs:
           "docker://${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" \
           --additional-tag "${REGISTRY}/${IMAGE_NAME}:latest" \
           --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
+
+ deploy:
+  needs: [build]
+  if: github.event_name == 'push'
+  runs-on: ubuntu-latest
+  timeout-minutes: 60
+  steps:
+   - uses: actions/checkout@v6.0.2
+
+   - uses: actions/download-artifact@v4
+     with:
+      name: cloudflare
+      path: result/
+
+   - name: Compute worker name
+     id: worker
+     run: |
+      if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+        echo "name=web-app" >> $GITHUB_OUTPUT
+      else
+        BRANCH=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
+        echo "name=web-app-${BRANCH}" >> $GITHUB_OUTPUT
+      fi
+
+   - name: Deploy to Cloudflare Workers
+     uses: cloudflare/wrangler-action@v3
+     with:
+      apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      command: deploy --name ${{ steps.worker.outputs.name }}
+
+ cleanup-preview:
+  if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
+  runs-on: ubuntu-latest
+  steps:
+   - name: Delete preview worker
+     run: |
+      BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
+      curl -s -X DELETE \
+        "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/web-app-${BRANCH}" \
+        -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}"
