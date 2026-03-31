@@ -8,6 +8,7 @@
     flake-utils.url = "github:numtide/flake-utils"; # helpers for multi-system boilerplate
     rust-overlay.url = "github:oxalica/rust-overlay"; # provides specific Rust toolchains via overlay
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs"; # ensure rust-overlay uses our pinned nixpkgs
+    crane.url = "github:ipetkov/crane"; # incremental Rust builds (deps cached separately)
   };
 
   outputs =
@@ -16,6 +17,7 @@
       nixpkgs,
       flake-utils,
       rust-overlay,
+      crane,
     }:
     let
       lib = nixpkgs.lib;
@@ -76,46 +78,6 @@
             "x86_64-unknown-linux-musl" # fully static Linux binaries
           ];
         };
-
-      # Build a Rust platform (cargo + rustc pair) using our chosen toolchain.
-      mkRustPlatform =
-        pkgs:
-        let
-          rt = mkRustToolchain pkgs;
-        in
-        pkgs.makeRustPlatform {
-          cargo = rt;
-          rustc = rt;
-        };
-
-      # Build the Rust crate as a browser-targeted WASM package using
-      # wasm-bindgen. The output (JS glue + .wasm) can be imported by
-      # the TypeScript/web build.
-      mkWasmPkg =
-        pkgs:
-        (mkRustPlatform pkgs).buildRustPackage {
-          pname = "wasm-pkg";
-          version = cargoToml.package.version;
-          src = lib.fileset.toSource {
-            root = ./.;
-            fileset = lib.fileset.gitTracked ./.;
-          };
-          cargoLock.lockFile = ./Cargo.lock;
-          nativeBuildInputs = [ pkgs.wasm-bindgen-cli ];
-          buildPhase = ''
-            runHook preBuild
-            cargo build --target wasm32-unknown-unknown --lib --release
-            runHook postBuild
-          '';
-          doCheck = false;
-          installPhase = ''
-            runHook preInstall
-            mkdir -p $out
-            wasm-bindgen --target web --out-dir $out \
-              target/wasm32-unknown-unknown/release/simple_project_template.wasm
-            runHook postInstall
-          '';
-        };
     in
     # ── Per-system outputs ──────────────────────────────────────────
     flake-utils.lib.eachSystem supportedSystems (
@@ -123,8 +85,10 @@
       let
         pkgs = mkPkgs system;
         rustToolchain = mkRustToolchain pkgs;
-        rustPlatform = mkRustPlatform pkgs;
-        wasmPkg = mkWasmPkg pkgs;
+
+        # Shared crane library — all Rust builds use this so the toolchain
+        # is instantiated once and dependencies are cached across derivations.
+        craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
         # Clean source: only git-tracked files (excludes target/, node_modules/, result, etc.)
         src = lib.fileset.toSource {
@@ -146,55 +110,80 @@
             nodejs
           ];
 
+        # ── Rust build helpers ─────────────────────────────────────
+
+        # Args shared by all native (host) Rust derivations.
+        nativeArgs = {
+          inherit src;
+          strictDeps = true;
+        };
+
+        # Build dependencies once; every native bin derivation reuses these
+        # artifacts so that a single source change only recompiles app code.
+        nativeDepsArtifacts = craneLib.buildDepsOnly nativeArgs;
+
         # ── Package derivations ───────────────────────────────────
 
         # Native Rust binaries (one per discovered bin target, prefixed "rust-")
         rustBins = builtins.listToAttrs (
           map (binName: {
             name = "rust-${binName}";
-            value = rustPlatform.buildRustPackage {
-              pname = binName;
-              version = cargoToml.package.version;
-              inherit src;
-              cargoLock.lockFile = ./Cargo.lock;
-              cargoBuildFlags = [
-                "--bin"
-                binName
-              ];
-              cargoTestFlags = [
-                "--bin"
-                binName
-              ];
+            value = craneLib.buildPackage (nativeArgs // {
+              cargoArtifacts = nativeDepsArtifacts;
+              cargoExtraArgs = "--bin ${binName}";
               meta.mainProgram = binName;
-            };
+            });
           }) rustBinNames
         );
 
         # MUSL statically-linked binaries — Linux only, one per bin target.
         # Produces fully portable binaries with no shared-library dependencies.
         muslLinker = pkgs.pkgsStatic.stdenv.cc;
+        muslArgs = nativeArgs // {
+          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "${muslLinker}/bin/${muslLinker.targetPrefix}cc";
+          nativeBuildInputs = [ muslLinker ];
+          doCheck = false;
+        };
+        muslDepsArtifacts = craneLib.buildDepsOnly muslArgs;
         muslBins = lib.optionalAttrs pkgs.stdenv.isLinux (
           builtins.listToAttrs (
             map (binName: {
               name = "musl-${binName}";
-              value = rustPlatform.buildRustPackage {
+              value = craneLib.buildPackage (muslArgs // {
+                cargoArtifacts = muslDepsArtifacts;
                 pname = "${binName}-musl";
-                version = cargoToml.package.version;
-                inherit src;
-                cargoLock.lockFile = ./Cargo.lock;
-                cargoBuildFlags = [
-                  "--bin"
-                  binName
-                ];
-                doCheck = false;
-                CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-                CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "${muslLinker}/bin/${muslLinker.targetPrefix}cc";
-                nativeBuildInputs = [ muslLinker ];
+                cargoExtraArgs = "--bin ${binName}";
                 meta.mainProgram = binName;
-              };
+              });
             }) rustBinNames
           )
         );
+
+        # WASM: deps cached separately from the bindgen step.
+        wasmArgs = nativeArgs // {
+          CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+          doCheck = false;
+        };
+        wasmDepsArtifacts = craneLib.buildDepsOnly wasmArgs;
+
+        # Build the Rust crate as a browser-targeted WASM package using
+        # wasm-bindgen. The output (JS glue + .wasm) can be imported by
+        # the TypeScript/web build.
+        wasmPkg = craneLib.mkCargoDerivation (wasmArgs // {
+          pname = "wasm-pkg";
+          cargoArtifacts = wasmDepsArtifacts;
+          nativeBuildInputs = [ pkgs.wasm-bindgen-cli ];
+          buildPhaseCargoCommand = "cargo build --target wasm32-unknown-unknown --lib --release";
+          doInstallCargoArtifacts = false;
+          installPhase = ''
+            runHook preInstall
+            mkdir -p $out
+            wasm-bindgen --target web --out-dir $out \
+              target/wasm32-unknown-unknown/release/simple_project_template.wasm
+            runHook postInstall
+          '';
+        });
 
         # Expo web application — static export + both deployment bundles.
         # Outputs:
@@ -345,7 +334,7 @@
           {
             inherit cloudflare;
             "expo-app" = expoApp;
-            "wasm-pkg" = mkWasmPkg pkgs;
+            "wasm-pkg" = wasmPkg; # reuse the variable — no duplicate derivation
             default = cloudflare; # matches wrangler.jsonc result/ layout
           }
           // rustBins # native Rust binaries  (rust-<name>)
