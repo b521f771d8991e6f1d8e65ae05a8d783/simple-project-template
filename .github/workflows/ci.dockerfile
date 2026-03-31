@@ -20,11 +20,11 @@ FROM development AS build
 WORKDIR /build
 
 # cache npm
-COPY package.json package-lock.json /
+COPY package.json package-lock.json ./
 RUN npm install
 
 # cache rust
-COPY Cargo.lock .
+COPY Cargo.lock Cargo.toml ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release && rm -rf src
 
 # copy the rest
