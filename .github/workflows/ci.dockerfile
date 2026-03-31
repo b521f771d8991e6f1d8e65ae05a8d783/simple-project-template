@@ -25,12 +25,9 @@ RUN npm install
 # cache rust deps — same registry mount as the build step so the
 # downloaded tarballs persist across builds and aren't re-downloaded
 COPY Cargo.toml Cargo.lock ./
-RUN --mount=type=cache,target=/root/.cargo/registry \
-    cargo fetch
+RUN cargo fetch
 
 # copy the rest and build
 COPY . .
-RUN --mount=type=cache,target=/root/.cargo/registry \
-    --mount=type=cache,target=/build/target \
-    --mount=type=cache,target=/tmp/metro-cache \
-    cargo check && npx tsc --noEmit 
+RUN cargo check
+RUN npx tsc --noEmit 
