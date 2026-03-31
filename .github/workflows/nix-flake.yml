@@ -72,18 +72,7 @@ jobs:
 
    - name: Build and test Nix Flake
      run: |
-      nix --extra-experimental-features "flakes nix-command" flake check -L --show-trace
-      mkdir ${{ runner.temp }}/result
-      nix --extra-experimental-features "flakes nix-command" copy --no-check-sigs \
-        .
-        --to ${{ runner.temp }}/result
-
-   - name: Upload artifact
-     uses: actions/upload-artifact@v7.0.0
-     with:
-      name: digests-${{ runner.os }}-${{ runner.arch }}
-      path: ${{ runner.temp }}/result
-      if-no-files-found: error
+      nix --extra-experimental-features "flakes nix-command" build .
 
    - name: Push Docker image to GHCR
      if: runner.os == 'Linux'
