@@ -24,7 +24,6 @@ All build orchestration uses npm scripts defined in [package.json](package.json)
 | `npm run dev:web` | Start Expo dev server for web |
 | `npm run dev:android` | Start Expo dev server for Android |
 | `npm run dev:ios` | Start Expo dev server for iOS |
-| `npm run build:web` | Full web build (Expo export + server + worker bundles) |
 | `npm run build:server` | esbuild server bundle (`dist/main.js`) |
 | `npm run build:worker` | esbuild worker bundle (`dist/worker.js`) |
 | `npm run lint` | Lint TypeScript via Expo lint |
