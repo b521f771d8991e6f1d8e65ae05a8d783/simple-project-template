@@ -75,15 +75,8 @@ jobs:
       nix --extra-experimental-features "flakes nix-command" flake check -L --show-trace
       mkdir ${{ runner.temp }}/result
       nix --extra-experimental-features "flakes nix-command" copy --no-check-sigs \
-        .#web-app .#web-app-debug \
-        .#native-lib .#rust-lib .#swift-lib .#typescript-app \
-        .#wasm-pkg \
+        .
         --to ${{ runner.temp }}/result
-      if [ "$(uname)" = "Linux" ]; then
-        nix --extra-experimental-features "flakes nix-command" copy --no-check-sigs \
-          .#docker-image .#docker-image-debug \
-          --to ${{ runner.temp }}/result
-      fi
 
    - name: Upload artifact
      uses: actions/upload-artifact@v4
