@@ -21,8 +21,9 @@ WORKDIR /build
 COPY package.json package-lock.json .
 RUN npm install
 COPY . .
-RUN --mount=type=cache,target=/build/rust/target \
-    --mount=type=cache,target=~/.cargo \
-    --mount=type=cache,target=/build/typescript/.expo \
+RUN --mount=type=cache,target=~/.cargo \
+    --mount=type=cache,target=/build/target \
+    --mount=type=cache,target=/build/dist \
+    --mount=type=cache,target=/build/.expo \
     --mount=type=cache,target=/tmp/metro-cache \
-    npm run build:web
+    cargo build && npm run build:web
