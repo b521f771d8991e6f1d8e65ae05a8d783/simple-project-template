@@ -14,7 +14,7 @@ RUN groupadd --gid 1000 vscode \
 
 VOLUME /nix
 
-FROM development AS build
+FROM development AS check
 
 WORKDIR /build
 
@@ -33,4 +33,4 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/build/target \
     --mount=type=cache,target=/tmp/metro-cache \
-    cargo build --release && npm run build:web
+    cargo check && npx tsc --noEmit 

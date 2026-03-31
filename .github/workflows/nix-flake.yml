@@ -123,7 +123,7 @@ jobs:
           --additional-tag "${REGISTRY}/${IMAGE_NAME}:latest" \
           --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
 
- deploy:
+ deploy-to-cloudflare:
   needs: [build]
   if: github.event_name == 'push'
   runs-on: ubuntu-latest
