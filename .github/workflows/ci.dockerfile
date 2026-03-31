@@ -18,11 +18,15 @@ VOLUME /nix
 FROM development AS build
 
 WORKDIR /build
-COPY package.json package-lock.json .
+
+# cache npm
+COPY package.json package-lock.json /
 RUN npm install
+
+# cache rust
+COPY Cargo.lock .
+RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release && rm -rf src
+
+# copy the rest
 COPY . .
-RUN --mount=type=cache,target=~/.cargo \
-    --mount=type=cache,target=/build/target \
-    --mount=type=cache,target=/build/.expo \
-    --mount=type=cache,target=/tmp/metro-cache \
-    cargo build && npm run build:web
+RUN cargo build --release && npm run build:web
