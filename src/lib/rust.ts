@@ -7,8 +7,8 @@
  *   - **Web / Cloudflare Workers** → WASM (wasm-bindgen, loaded via expo-asset)
  *   - **React Native (iOS/Android)** → Native module via Expo Modules bridge
  *     (calls the Rust cdylib/staticlib through a thin native wrapper)
- *   - **Electron** → Node.js native addon via node-ffi or napi-rs
- *     (loads the Rust shared library directly)
+ *   - **Tauri** → direct Rust calls via Tauri commands
+ *     (the Rust backend is the Tauri app itself)
  *
  * Usage:
  *   import { initRust, get_1 } from "@/lib/rust";
@@ -20,7 +20,7 @@
  *   1. Add #[wasm_bindgen] + #[no_mangle] pub extern "C" fn in src-rust/lib.rs
  *   2. Run `npm run compile:wasm` to regenerate WASM bindings
  *   3. Add the export at the bottom of this file — types come from the .d.ts
- *   4. For native: expose the same function in the Expo Module / Electron addon
+ *   4. For native: expose the same function in the Expo Module / Tauri command
  *
  * The caller should not care which backend is used. All functions have
  * identical signatures regardless of platform.
@@ -96,18 +96,18 @@ async function initWasm(): Promise<RustBackend> {
 //   };
 // }
 
-// ── Electron backend (Node.js native addon) ─────────────────────
-// TODO: Implement napi-rs or node-ffi bridge to the Rust shared library.
+// ── Tauri backend (desktop via Tauri commands) ──────────────────
+// TODO: Implement Tauri commands that call the same Rust functions.
 //
-// The Electron main process can load the .so/.dylib/.dll directly.
-// Expose functions via IPC to the renderer, or use a preload script.
+// In Tauri, the Rust backend IS the app — expose functions as
+// #[tauri::command] and call them via @tauri-apps/api/core invoke().
 //
 // Once implemented, uncomment and update:
 //
-// async function initElectron(): Promise<RustBackend> {
-//   const addon = require("../../native/simple_project_template.node");
+// async function initTauri(): Promise<RustBackend> {
+//   const { invoke } = await import("@tauri-apps/api/core");
 //   return {
-//     get_1: () => addon.get_1(),
+//     get_1: () => invoke<number>("get_1"),
 //   };
 // }
 

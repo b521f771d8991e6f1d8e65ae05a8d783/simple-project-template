@@ -137,14 +137,15 @@ All UI styling uses **NativeWind**, which is already installed (`nativewind` ^4.
 
 ## Language Selection
 
-**Default to TypeScript** for all new code unless there is a clear performance reason not to.
+**Use Rust for all business logic.** TypeScript is for UI and glue code only.
 
-Use **Rust** only when:
-- CPU-bound work would be a bottleneck in TypeScript (e.g. encoding, parsing, crypto, heavy computation)
-- You need deterministic low-latency execution
-- The logic will be compiled to WASM and called from the frontend
+- **Rust** — all core logic, data processing, validation, algorithms, API clients, database access, and anything that could be described as "business logic." Rust code lives in [src-rust/](src-rust/) and is called from TypeScript via [src/lib/rust.ts](src/lib/rust.ts).
+- **TypeScript** — React Native UI components, screen layouts, navigation, styling, and wiring up Rust functions to the UI. TypeScript should be thin: fetch data from Rust, display it, send user input back to Rust.
 
-When in doubt, write TypeScript first. Optimize to Rust only if profiling shows it is necessary.
+Use TypeScript for logic only when:
+- It is purely UI-related (animations, layout calculations, form state)
+- It is trivial glue code (< 5 lines) not worth the FFI boundary
+- It interacts with a JS-only API (Expo SDK, React Navigation)
 
 ## Project Structure
 
@@ -196,8 +197,11 @@ This app has two deployment contexts. Use the right APIs for each:
 | **Express server** | [src/server.ts](src/server.ts) → `dist/main.js` | Full Node.js, no DOM |
 | **Cloudflare Worker** | [src/worker.ts](src/worker.ts) → `dist/worker.js` | Workers runtime, no Node.js `fs`/`child_process` |
 | **Expo frontend** | [src/app/](src/app/) | React Native / browser APIs only — no server-side modules |
+| **Tauri desktop** | (future) Rust backend + webview frontend | Full Rust + Tauri commands, no Node.js |
 
-Cross-context communication must go through the Express HTTP API — do not import server-side modules into frontend code.
+Cross-context communication must go through the Express HTTP API or Tauri commands — do not import server-side modules into frontend code.
+
+The Rust interop layer at [src/lib/rust.ts](src/lib/rust.ts) abstracts the backend: WASM on web, Expo Modules on native mobile, Tauri commands on desktop. Callers should import from `@/lib/rust` and never interact with WASM or native bridges directly.
 
 ## CI/CD Workflows
 
