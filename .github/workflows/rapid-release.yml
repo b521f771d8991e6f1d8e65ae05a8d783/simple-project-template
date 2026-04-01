@@ -42,19 +42,11 @@ jobs:
           sudo apt-get install -y musl-tools
           curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
           cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
-          npm ci --ignore-scripts
+          npm ci --ignore-scripts --prefer-offline
 
       # ── Build ──────────────────────────────────────────────────
-      - name: Build Rust (WASM + MUSL)
-        run: |
-          cargo build --target wasm32-unknown-unknown --lib --release
-          cargo build --target x86_64-unknown-linux-musl --release
-          mkdir -p src/wasm
-          wasm-bindgen --target web --out-dir src/wasm \
-            target/wasm32-unknown-unknown/release/simple_project_template.wasm
-
-      - name: Build web
-        run: npm run build:web
+      - name: Build
+        run: npm run build:cloudflare-worker
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7.0.0
@@ -81,13 +73,10 @@ jobs:
 
       - name: Deploy to Cloudflare Workers
         if: github.event_name == 'push'
-        uses: cloudflare/wrangler-action@v3.14.1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4.79.0"
-          command: deploy --name ${{ steps.worker.outputs.name }}
+        run: npx wrangler deploy --name ${{ steps.worker.outputs.name }}
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SKIP_NIX_BUILD: "1"
 
   cleanup-preview:
