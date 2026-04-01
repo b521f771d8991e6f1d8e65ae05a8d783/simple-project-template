@@ -54,7 +54,7 @@ jobs:
             curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
             cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
           fi
-          npm ci --ignore-scripts --prefer-offline
+          bun install --frozen-lockfile --ignore-scripts
 
       # ── Build & Deploy ───────────────────────────────────────────
       - name: Build & deploy 🚀
