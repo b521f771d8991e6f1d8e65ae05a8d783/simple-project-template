@@ -1,14 +1,11 @@
-import { ActivityIndicator, ScrollView } from "react-native";
+import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useRust } from "@/hooks/use-rust";
 import { get_1 } from "@/lib/rust";
 
 export default function HomeScreen() {
-	const { ready, error } = useRust();
-
 	return (
 		<ThemedView className="flex-1">
 			<SafeAreaView className="flex-1">
@@ -24,18 +21,10 @@ export default function HomeScreen() {
 						darkColor="#111"
 					>
 						<ThemedText type="subtitle">Rust + WASM</ThemedText>
-						{error ? (
-							<ThemedText className="text-red-500">
-								Failed: {error.message}
-							</ThemedText>
-						) : !ready ? (
-							<ActivityIndicator />
-						) : (
-							<ThemedText>
-								Rust says:{" "}
-								<ThemedText type="semibold">{get_1()}</ThemedText>
-							</ThemedText>
-						)}
+						<ThemedText>
+							Rust says:{" "}
+							<ThemedText type="semibold">{get_1()}</ThemedText>
+						</ThemedText>
 					</ThemedView>
 
 					<ThemedView

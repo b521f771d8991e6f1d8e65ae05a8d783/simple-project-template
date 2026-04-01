@@ -26,7 +26,9 @@
  * identical signatures regardless of platform.
  */
 
+import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react";
 import { Platform } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
 import type * as WasmExports from "../wasm/simple_project_template_bg.wasm";
 
 // ── Backend interface ───────────────────────────────────────────
@@ -122,6 +124,7 @@ export async function initRust(): Promise<void> {
 		// Native platforms (iOS/Android) — fall back to WASM until
 		// the Expo Module native bridge is implemented.
 		// Replace with initNative() once available.
+		console.warn("Using wasm in a non-browser environment.");
 		backend = await initWasm();
 	}
 }
@@ -130,6 +133,35 @@ function assertReady(): RustBackend {
 	if (!backend)
 		throw new Error("Rust not initialized — call initRust() first");
 	return backend;
+}
+
+// ── React Provider ──────────────────────────────────────────────
+// Wrap your app in <RustProvider> to initialize Rust before rendering.
+// Children render only after the backend is ready.
+
+const RustContext = createContext(false);
+
+export function useRustReady() {
+	return useContext(RustContext);
+}
+
+export function RustProvider({ children }: PropsWithChildren) {
+	const [ready, setReady] = useState(false);
+
+	useEffect(() => {
+		initRust()
+			.then(() => setReady(true))
+			.catch(console.error)
+			.finally(() => SplashScreen.hideAsync());
+	}, []);
+
+	if (!ready) return null;
+
+	return (
+		<RustContext.Provider value={ready}>
+			{children}
+		</RustContext.Provider>
+	);
 }
 
 // ── Exported functions ──────────────────────────────────────────
