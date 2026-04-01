@@ -1,9 +1,5 @@
 {
-    "build": {
-        "dockerfile": "Dockerfile",
-        "context": ".",
-        "target": "development"
-    },
+    "image": "docker.io/debian:latest",
     "containerUser": "vscode",
     "remoteUser": "vscode",
     "remoteEnv": {

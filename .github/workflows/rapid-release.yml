@@ -25,18 +25,27 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
+      # ── Environment setup ──────────────────────────────────────
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown,x86_64-unknown-linux-musl
 
-      - run: sudo apt-get install -y musl-tools
-
       - uses: Swatinem/rust-cache@v2
 
-      - name: Install wasm-bindgen-cli
-        run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
-      - name: Build WASM + MUSL binary
+      - name: Install system & CLI tools
+        run: |
+          sudo apt-get install -y musl-tools
+          curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
+          cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
+          npm ci --ignore-scripts
+
+      # ── Build ──────────────────────────────────────────────────
+      - name: Build Rust (WASM + MUSL)
         run: |
           cargo build --target wasm32-unknown-unknown --lib --release
           cargo build --target x86_64-unknown-linux-musl --release
@@ -44,14 +53,8 @@ jobs:
           wasm-bindgen --target web --out-dir src/wasm \
             target/wasm32-unknown-unknown/release/simple_project_template.wasm
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci --ignore-scripts
-
-      - run: npm run build:web
+      - name: Build web
+        run: npm run build:web
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7.0.0
@@ -60,17 +63,15 @@ jobs:
           path: dist/
           if-no-files-found: error
 
-      - name: Prepare Cloudflare assets
+      # ── Deploy ─────────────────────────────────────────────────
+      - name: Prepare Cloudflare assets & compute worker name
+        if: github.event_name == 'push'
+        id: worker
         run: |
           mkdir -p result-cloudflare/assets
           cp -r dist/. result-cloudflare/assets/
           mv result-cloudflare/assets/worker.js result-cloudflare/worker.js 2>/dev/null || true
           rm -f result-cloudflare/assets/main.js
-
-      - name: Compute worker name
-        if: github.event_name == 'push'
-        id: worker
-        run: |
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             echo "name=web-app" >> $GITHUB_OUTPUT
           else
