@@ -45,18 +45,18 @@ jobs:
           key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'package-lock.json') }}
           restore-keys: build-${{ runner.os }}-
 
-      - name: Setup Bun 🐇
-        uses: oven-sh/setup-bun@main
-
-      - name: Install tools & dependencies 🦀🔧
+      - name: Install tools & dependencies 🔧
         # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md most stuff is already installed :)
         run: |
+          curl -fsSL https://bun.sh/install | bash
+          export PATH="$HOME/.bun/bin:$PATH"
           rustup target add wasm32-unknown-unknown
           if ! command -v wasm-bindgen >/dev/null 2>&1; then
             curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
             cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
           fi
           bun install --frozen-lockfile --ignore-scripts
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
       # ── Build & Deploy 🏗️ ─────────────────────────────────────
       - name: Build & deploy 🏗️🚀
