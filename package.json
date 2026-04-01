@@ -7,11 +7,16 @@
     "dev:ios": "expo start --ios",
     "dev:web": "expo start --web",
     "compile:wasm": "cargo build --target wasm32-unknown-unknown --lib --release && mkdir -p src/wasm && wasm-bindgen --target web --out-dir src/wasm target/wasm32-unknown-unknown/release/simple_project_template.wasm",
+    "compile:wasm:dev": "cargo build --target wasm32-unknown-unknown --lib && mkdir -p src/wasm && wasm-bindgen --target web --out-dir src/wasm target/wasm32-unknown-unknown/debug/simple_project_template.wasm",
     "compile:web": "expo export --platform web",
     "compile:server": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify",
+    "compile:server:dev": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --sourcemap",
     "compile:worker": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --minify --format=esm --external:node:*",
+    "compile:worker:dev": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --sourcemap --format=esm --external:node:*",
     "build:node": "npm run compile:wasm && npm run compile:web && npm run compile:server",
+    "build:node:dev": "npm run compile:wasm:dev && npm run compile:web && npm run compile:server:dev",
     "build:cloudflare-worker": "npm run compile:wasm && EXPO_NO_TELEMETRY=1 npm run compile:web && npm run compile:worker",
+    "build:cloudflare-worker:dev": "npm run compile:wasm:dev && EXPO_NO_TELEMETRY=1 npm run compile:web && npm run compile:worker:dev",
     "lint": "expo lint && cargo check"
   },
   "dependencies": {

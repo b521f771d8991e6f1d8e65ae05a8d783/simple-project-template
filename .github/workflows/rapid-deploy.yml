@@ -61,7 +61,7 @@ jobs:
       # ── Build & Deploy 🏗️ ─────────────────────────────────────
       - name: Build & deploy 🏗️🚀
         run: |
-          bun run build:cloudflare-worker
+          bun run build:cloudflare-worker:dev
           if [ "${{ github.event_name }}" = "push" ]; then
             mkdir -p result-cloudflare/assets
             cp -r dist/. result-cloudflare/assets/
