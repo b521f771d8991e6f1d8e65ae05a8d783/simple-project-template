@@ -1,9 +1,5 @@
 {
-    "build": {
-        "dockerfile": ".github/workflows/ci.dockerfile",
-        "context": ".",
-        "target": "development"
-    },
+    "image": "docker.io/nixos/nix",
     "containerUser": "vscode",
     "remoteUser": "vscode",
     "remoteEnv": {
