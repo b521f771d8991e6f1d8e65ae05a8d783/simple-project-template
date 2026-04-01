@@ -6,7 +6,7 @@ import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useWasm } from '@/hooks/use-wasm';
-import { get_1 } from '@/lib/wasm';
+import { get_1 } from '@/lib/rust';
 import { Link } from 'expo-router';
 
 export default function HomeScreen() {
