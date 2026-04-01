@@ -1,8 +1,8 @@
-# Rapid Release — Docker-first fast path: build all stages, push image, deploy to CF
+# Rapid Release — fast CF deploy + parallel Docker image build
 #
 # Jobs:
-#   docker  — builds every Dockerfile stage, pushes image to GHCR,
-#             extracts Cloudflare assets from the final image, deploys
+#   deploy  — npm build + wrangler deploy to Cloudflare (fast path, ~30-45s)
+#   docker  — builds all Dockerfile stages, pushes image to GHCR (parallel, non-blocking)
 #   cleanup-preview — deletes preview workers when a branch is deleted
 #
 # Secrets required:
@@ -16,43 +16,54 @@ on:
   delete:
 
 jobs:
-  docker:
+  deploy:
     if: github.event_name != 'delete'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write
       id-token: write
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          targets: wasm32-unknown-unknown,x86_64-unknown-linux-musl
 
-      - name: Build all Docker stages
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache,mode=max
+      - run: sudo apt-get install -y musl-tools
 
-      - name: Extract Cloudflare artifact from Docker image
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version 0.2.108 --locked
+
+      - name: Build WASM + MUSL binary
         run: |
-          CID=$(docker create "$REGISTRY/$IMAGE_NAME:$GITHUB_SHA")
+          cargo build --target wasm32-unknown-unknown --lib --release
+          cargo build --target x86_64-unknown-linux-musl --release
+          mkdir -p src/wasm
+          wasm-bindgen --target web --out-dir src/wasm \
+            target/wasm32-unknown-unknown/release/simple_project_template.wasm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - run: npm run build:web
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: result-web
+          path: dist/
+          if-no-files-found: error
+
+      - name: Prepare Cloudflare assets
+        run: |
           mkdir -p result-cloudflare/assets
-          docker cp "$CID:/app/." result-cloudflare/assets/
-          docker rm "$CID"
-          rm -rf result-cloudflare/assets/bin
+          cp -r dist/. result-cloudflare/assets/
           mv result-cloudflare/assets/worker.js result-cloudflare/worker.js 2>/dev/null || true
           rm -f result-cloudflare/assets/main.js
 
@@ -78,24 +89,9 @@ jobs:
         env:
           SKIP_NIX_BUILD: "1"
 
-      - name: Push Docker image to GHCR
-        run: |
-          IMAGE_TAG="${GITHUB_SHA::8}"
-          docker tag "$REGISTRY/$IMAGE_NAME:$GITHUB_SHA" "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
-          docker tag "$REGISTRY/$IMAGE_NAME:$GITHUB_SHA" "$REGISTRY/$IMAGE_NAME:latest"
-          docker push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
-          docker push "$REGISTRY/$IMAGE_NAME:latest"
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v7.0.0
-        with:
-          name: result-docker
-          path: result-cloudflare/
-          if-no-files-found: error
-
   cleanup-preview:
     if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Delete preview worker
         run: |
