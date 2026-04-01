@@ -13,7 +13,7 @@
         "directory": "result-cloudflare/assets"
     },
     "build": {
-        "command": "[ \"$SKIP_NIX_BUILD\" = \"1\" ] || nix build .#cloudflare-worker --out-link result-cloudflare"
+        "command": "nix build .#cloudflare-worker --out-link result-cloudflare"
     },
     "observability": {
         "enabled": false,

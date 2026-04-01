@@ -72,13 +72,12 @@ jobs:
             else
               WORKER_NAME="web-app-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
             fi
-            bunx wrangler deploy --name "$WORKER_NAME"
+            bunx wrangler deploy --name "$WORKER_NAME" --no-bundle --main result-cloudflare/worker.js
           fi
         env:
           TMPDIR: /tmp
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SKIP_NIX_BUILD: "1"
 
       - name: Upload build artifacts 📤
         uses: actions/upload-artifact@main
