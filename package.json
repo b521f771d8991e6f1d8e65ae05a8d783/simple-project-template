@@ -6,12 +6,13 @@
     "dev:android": "expo start --android",
     "dev:ios": "expo start --ios",
     "dev:web": "expo start --web",
-    "build:server": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify",
-    "build:worker": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --minify --format=esm --external:node:*",
-    "build:web": "expo export --platform web && npm run build:server && npm run build:worker",
-    "build:cloudflare-worker": "npm run build:wasm && EXPO_NO_TELEMETRY=1 EXPO_USE_FAST_RESOLVER=1 expo export --platform web && npm run build:server && npm run build:worker",
-    "build:wasm": "cargo build --target wasm32-unknown-unknown --lib --release && mkdir -p src/wasm && wasm-bindgen --target web --out-dir src/wasm target/wasm32-unknown-unknown/release/simple_project_template.wasm",
-    "lint": "expo lint"
+    "compile:wasm": "cargo build --target wasm32-unknown-unknown --lib --release && mkdir -p src/wasm && wasm-bindgen --target web --out-dir src/wasm target/wasm32-unknown-unknown/release/simple_project_template.wasm",
+    "compile:web": "expo export --platform web",
+    "compile:server": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify",
+    "compile:worker": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --minify --format=esm --external:node:*",
+    "build:node": "npm run compile:wasm && npm run compile:web && npm run compile:server",
+    "build:cloudflare-worker": "npm run compile:wasm && EXPO_NO_TELEMETRY=1 EXPO_USE_FAST_RESOLVER=1 npm run compile:web && npm run compile:worker",
+    "lint": "expo lint && cargo check"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

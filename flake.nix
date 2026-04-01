@@ -1,4 +1,4 @@
-# Project flake — Rust (native, MUSL, WASM) + Expo web (Cloudflare Workers)
+# Project flake — Rust (native, WASM) + Expo web (Cloudflare Workers)
 #
 # Nix reference: https://nixos.org/manual/nixpkgs/stable/
 {
@@ -68,14 +68,13 @@
           config.allowUnfree = false;
         };
 
-      # Stable Rust toolchain with WASM and MUSL targets.
+      # Stable Rust toolchain with WASM targets.
       mkRustToolchain =
         pkgs:
         pkgs.rust-bin.stable.latest.default.override {
           targets = [
             "wasm32-unknown-unknown" # browser WASM via wasm-bindgen
             "wasm32-wasip1" # WASI preview 1
-            "x86_64-unknown-linux-musl" # fully static Linux binaries
           ];
         };
     in
@@ -136,56 +135,12 @@
           }) rustBinNames
         );
 
-        # MUSL statically-linked binaries — Linux only, one per bin target.
-        # Produces fully portable binaries with no shared-library dependencies.
-        muslLinker = pkgs.pkgsStatic.stdenv.cc;
-        muslArgs = nativeArgs // {
-          CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
-          CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER = "${muslLinker}/bin/${muslLinker.targetPrefix}cc";
-          nativeBuildInputs = [ muslLinker ];
-          doCheck = false;
-        };
-        muslDepsArtifacts = craneLib.buildDepsOnly muslArgs;
-        muslBins = lib.optionalAttrs pkgs.stdenv.isLinux (
-          builtins.listToAttrs (
-            map (binName: {
-              name = "musl-${binName}";
-              value = craneLib.buildPackage (muslArgs // {
-                cargoArtifacts = muslDepsArtifacts;
-                pname = "${binName}-musl";
-                cargoExtraArgs = "--bin ${binName}";
-                meta.mainProgram = binName;
-              });
-            }) rustBinNames
-          )
-        );
+        # Vendored cargo deps — enables offline cargo builds inside buildNpmPackage.
+        cargoVendorDir = craneLib.vendorCargoDeps { cargoLock = ./Cargo.lock; };
 
-        # WASM: deps cached separately from the bindgen step.
-        wasmArgs = nativeArgs // {
-          CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-          doCheck = false;
-        };
-        wasmDepsArtifacts = craneLib.buildDepsOnly wasmArgs;
-
-        # Build the Rust crate as a browser-targeted WASM package using
-        # wasm-bindgen. The output (JS glue + .wasm) can be imported by
-        # the TypeScript/web build.
-        wasmPkg = craneLib.mkCargoDerivation (wasmArgs // {
-          pname = "wasm-pkg";
-          cargoArtifacts = wasmDepsArtifacts;
-          nativeBuildInputs = [ pkgs.wasm-bindgen-cli ];
-          buildPhaseCargoCommand = "cargo build --target wasm32-unknown-unknown --lib --release";
-          doInstallCargoArtifacts = false;
-          installPhase = ''
-            runHook preInstall
-            mkdir -p $out
-            wasm-bindgen --target web --out-dir $out \
-              target/wasm32-unknown-unknown/release/simple_project_template.wasm
-            runHook postInstall
-          '';
-        });
-
-        # Expo web application — static export + both deployment bundles.
+        # Expo web application — integrated Rust (WASM) + TypeScript build.
+        # Uses npm scripts build:node and build:cloudflare-worker which
+        # invoke cargo internally (with vendored deps for nix sandbox).
         # Outputs:
         #   $out/bin/main.js    — Node.js server (for Docker)
         #   $out/worker/worker.js — esbuild CF Worker bundle
@@ -198,27 +153,28 @@
           npmConfigHook = pkgs.importNpmLock.npmConfigHook;
           nativeBuildInputs = with pkgs; [
             removeReferencesTo
+            rustToolchain
+            wasm-bindgen-cli
           ];
           env.NODE_ENV = "production";
           preBuild = ''
             export HOME=$TMPDIR
-            # Make the WASM package available to the TypeScript build
-            mkdir -p src/wasm
-            cp -r ${wasmPkg}/* src/wasm/
+            # Use crane's vendored deps config (no network in nix sandbox)
+            mkdir -p .cargo
+            cp ${cargoVendorDir}/config.toml .cargo/config.toml
           '';
           buildPhase = ''
             runHook preBuild
-            npm run build:web
+            npm run build:node
             runHook postBuild
           '';
           installPhase = ''
             runHook preInstall
-            mkdir -p $out/bin $out/worker/assets
+            mkdir -p $out/bin $out/assets
             cp dist/main.js $out/bin/main.js
-            cp dist/worker.js $out/worker/worker.js
-            # Expo static export assets (everything except the server bundles)
-            cp -r dist/. $out/worker/assets/
-            rm $out/worker/assets/main.js $out/worker/assets/worker.js
+            # Expo static export assets (everything except the server bundle)
+            cp -r dist/. $out/assets/
+            rm $out/assets/main.js
             runHook postInstall
           '';
           passthru.runtimeDeps = with pkgs; [
@@ -231,23 +187,61 @@
         # Cloudflare deployment artifact: matches wrangler.jsonc layout
         #   result/worker.js      ← main
         #   result/assets/        ← assets.directory
-        cloudflare = pkgs.stdenv.mkDerivation {
-          name = "cloudflare";
-          dontUnpack = true;
-          dontConfigure = true;
-          dontBuild = true;
-          dontCheck = true;
+        cloudflare = pkgs.buildNpmPackage {
+          pname = "cloudflare";
+          version = "0.0.0";
+          inherit src;
+          npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
+          npmConfigHook = pkgs.importNpmLock.npmConfigHook;
+          nativeBuildInputs = with pkgs; [
+            rustToolchain
+            wasm-bindgen-cli
+          ];
+          env.NODE_ENV = "production";
+          preBuild = ''
+            export HOME=$TMPDIR
+            # Use crane's vendored deps config (no network in nix sandbox)
+            mkdir -p .cargo
+            cp ${cargoVendorDir}/config.toml .cargo/config.toml
+          '';
+          buildPhase = ''
+            runHook preBuild
+            npm run build:cloudflare-worker
+            runHook postBuild
+          '';
           installPhase = ''
-            mkdir -p $out
-            cp ${expoApp}/worker/worker.js $out/worker.js
-            cp -r ${expoApp}/worker/assets $out/
+            runHook preInstall
+            mkdir -p $out/assets
+            cp dist/worker.js $out/worker.js
+            cp -r dist/. $out/assets/
+            rm $out/assets/main.js $out/assets/worker.js
+            runHook postInstall
           '';
         };
 
-        # Docker image — systemd as PID 1 managing two services:
-        #   node-server  — Node.js Express backend
-        #   litestream   — SQLite replication (only starts if $LITESTREAM_URL is set)
+        # Docker image — s6 supervised Node.js server + optional Litestream
         port = "8081";
+
+        # s6 service directories
+        s6Services = pkgs.runCommand "s6-services" { } ''
+          # Node.js server — always supervised
+          mkdir -p $out/etc/s6/node-server
+          cat > $out/etc/s6/node-server/run <<EOF
+          #!/bin/sh
+          exec ${pkgs.nodejs-slim}/bin/node ${expoApp}/bin/${expoApp.meta.mainProgram}
+          EOF
+          chmod +x $out/etc/s6/node-server/run
+
+          # Litestream — only starts if LITESTREAM_URL is set
+          mkdir -p $out/etc/s6/litestream
+          cat > $out/etc/s6/litestream/run <<EOF
+          #!/bin/sh
+          if [ -z "\$LITESTREAM_URL" ]; then exec sleep infinity; fi
+          while [ ! -f /app/data.db ]; do sleep 1; done
+          exec ${pkgs.litestream}/bin/litestream replicate -config /etc/litestream.yml
+          EOF
+          chmod +x $out/etc/s6/litestream/run
+        '';
 
         litestreamConfig = pkgs.writeTextDir "etc/litestream.yml" ''
           dbs:
@@ -256,50 +250,10 @@
                 - url: $LITESTREAM_URL
         '';
 
-        systemdUnits = pkgs.runCommand "systemd-units" { } ''
-          mkdir -p $out/lib/systemd
-          ln -s ${pkgs.systemdMinimal}/example/systemd/system $out/lib/systemd/system
-
-          mkdir -p $out/etc/systemd/system/multi-user.target.wants
-          ln -s multi-user.target $out/etc/systemd/system/default.target
-
-          cat > $out/etc/systemd/system/node-server.service <<EOF
-          [Unit]
-          Description=Node.js Express Server
-
-          [Service]
-          Type=simple
-          ExecStart=${pkgs.nodejs-slim}/bin/node ${expoApp}/bin/${expoApp.meta.mainProgram}
-          WorkingDirectory=/app
-          PassEnvironment=BACKEND_LISTEN_PORT BACKEND_LISTEN_HOSTNAME DISABLE_CLUSTER
-          Restart=always
-          RestartSec=3
-
-          [Install]
-          WantedBy=multi-user.target
-          EOF
-
-          cat > $out/etc/systemd/system/litestream.service <<EOF
-          [Unit]
-          Description=Litestream SQLite Replication
-          After=node-server.service
-          ConditionEnvironment=LITESTREAM_URL
-
-          [Service]
-          Type=simple
-          ExecStartPre=${pkgs.busybox}/bin/sh -c 'until [ -f /app/data.db ]; do sleep 1; done'
-          ExecStart=${pkgs.litestream}/bin/litestream replicate -config /etc/litestream.yml
-          WorkingDirectory=/app
-          PassEnvironment=LITESTREAM_URL
-          Restart=always
-          RestartSec=5
-
-          [Install]
-          WantedBy=multi-user.target
-          EOF
-
-          ln -s ../node-server.service $out/etc/systemd/system/multi-user.target.wants/
-          ln -s ../litestream.service $out/etc/systemd/system/multi-user.target.wants/
+        # Entrypoint: s6-svscan supervises all services
+        entrypoint = pkgs.writeScript "entrypoint.sh" ''
+          #!/bin/sh
+          exec ${pkgs.s6}/bin/s6-svscan /etc/s6
         '';
 
         dockerImage = lib.optionalAttrs pkgs.stdenv.isLinux (
@@ -307,12 +261,12 @@
             name = "web-app";
             contents = expoApp.runtimeDeps ++ [
               pkgs.busybox
-              pkgs.systemdMinimal
+              pkgs.s6
+              s6Services
               litestreamConfig
-              systemdUnits
             ];
             config = {
-              Cmd = [ "${pkgs.systemdMinimal}/lib/systemd/systemd" ];
+              Cmd = [ "${entrypoint}" ];
               WorkingDir = "/app";
               Env = [
                 "BACKEND_LISTEN_PORT=${port}"
@@ -330,11 +284,9 @@
           {
             inherit cloudflare;
             "expo-app" = expoApp;
-            "wasm-pkg" = wasmPkg; # reuse the variable — no duplicate derivation
             default = expoApp;
           }
           // rustBins # native Rust binaries  (rust-<name>)
-          // muslBins # MUSL static binaries  (musl-<name>, Linux only)
           // lib.optionalAttrs pkgs.stdenv.isLinux { "docker-image" = dockerImage; };
       in
       {
