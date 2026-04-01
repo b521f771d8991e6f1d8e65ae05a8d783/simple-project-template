@@ -139,7 +139,7 @@
         cargoVendorDir = craneLib.vendorCargoDeps { cargoLock = ./Cargo.lock; };
 
         # Expo web application — integrated Rust (WASM) + TypeScript build.
-        # Uses npm scripts build:node and build:cloudflare-worker-worker which
+        # Uses npm scripts build:node and build:cloudflare-worker which
         # invoke cargo internally (with vendored deps for nix sandbox).
         # Outputs:
         #   $out/bin/main.js    — Node.js server (for Docker)
@@ -206,7 +206,7 @@
           '';
           buildPhase = ''
             runHook preBuild
-            npm run build:cloudflare-worker-worker
+            npm run build:cloudflare-worker
             runHook postBuild
           '';
           installPhase = ''
