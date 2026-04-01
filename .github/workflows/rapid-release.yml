@@ -40,7 +40,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Restore build caches
         uses: actions/cache@v4
@@ -49,6 +48,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
+            node_modules
             /tmp/metro-cache
             /tmp/metro-file-map-*
           key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'package-lock.json') }}
