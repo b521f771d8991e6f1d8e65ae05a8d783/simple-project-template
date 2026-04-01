@@ -7,8 +7,8 @@
 # on beta/stable, use the Nix Flake workflow instead.
 #
 # Jobs:
-#   deploy          — Rust WASM + Expo web + Cloudflare Workers deploy
-#   cleanup-preview — deletes preview workers when a branch is deleted
+#   rapid-deploy    — 🦀 Rust WASM + 📱 Expo web + ☁️ Cloudflare Workers deploy
+#   cleanup-preview — 🧹 deletes preview workers when a branch is deleted
 #
 # Secrets required:
 #   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
@@ -32,10 +32,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      # ── Environment setup ──────────────────────────────────────
-      - run: rustup target add wasm32-unknown-unknown
-
-      - name: Restore build caches
+      # ── 🔧 Environment setup ──────────────────────────────────
+      - name: 📦 Restore build caches
         uses: actions/cache@v4
         with:
           path: |
@@ -47,19 +45,21 @@ jobs:
           key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'package-lock.json') }}
           restore-keys: build-${{ runner.os }}-
 
-      - uses: oven-sh/setup-bun@v2
+      - name: 🐇 Setup Bun
+        uses: oven-sh/setup-bun@v2
 
-      - name: Install system & CLI tools
+      - name: 🦀🔧 Install tools & dependencies
         # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md most stuff is already installed :)
         run: |
+          rustup target add wasm32-unknown-unknown
           if ! command -v wasm-bindgen >/dev/null 2>&1; then
             curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
             cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
           fi
           bun install --frozen-lockfile --ignore-scripts
 
-      # ── Build & Deploy ───────────────────────────────────────────
-      - name: Build & deploy 🚀
+      # ── 🏗️ Build & Deploy ─────────────────────────────────────
+      - name: 🏗️ Build & deploy 🚀
         run: |
           bun run build:cloudflare-worker
           if [ "${{ github.event_name }}" = "push" ]; then
@@ -80,7 +80,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SKIP_NIX_BUILD: "1"
 
-      - name: Upload build artifacts
+      - name: 📤 Upload build artifacts
         uses: actions/upload-artifact@v7.0.0
         with:
           name: result-cloudflare-worker-rapid-release
@@ -91,7 +91,7 @@ jobs:
     if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
     runs-on: ubuntu-24.04
     steps:
-      - name: Delete preview worker
+      - name: 🧹 Delete preview worker
         run: |
           BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
           curl -s -X DELETE \
