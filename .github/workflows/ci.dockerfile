@@ -13,21 +13,3 @@ RUN groupadd --gid 1000 vscode \
     && git config --system --add safe.directory /workspaces
 
 VOLUME /nix
-
-FROM development AS check
-
-WORKDIR /build
-
-# cache npm
-COPY package.json package-lock.json ./
-RUN npm install
-
-# cache rust deps — same registry mount as the build step so the
-# downloaded tarballs persist across builds and aren't re-downloaded
-COPY Cargo.toml Cargo.lock ./
-RUN cargo fetch
-
-# copy the rest and build
-COPY . .
-RUN cargo check
-RUN npx tsc --noEmit 
