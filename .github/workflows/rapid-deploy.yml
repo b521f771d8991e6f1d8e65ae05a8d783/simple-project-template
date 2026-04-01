@@ -47,6 +47,8 @@ jobs:
           key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'package-lock.json') }}
           restore-keys: build-${{ runner.os }}-
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Install system & CLI tools
         # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md most stuff is already installed :)
         run: |
@@ -54,8 +56,7 @@ jobs:
             curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
             cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
           fi
-          curl -fsSL https://bun.sh/install | bash
-          ~/.bun/bin/bun install --frozen-lockfile --ignore-scripts
+          bun install --frozen-lockfile --ignore-scripts
 
       # ── Build & Deploy ───────────────────────────────────────────
       - name: Build & deploy 🚀
