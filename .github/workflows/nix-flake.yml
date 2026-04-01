@@ -1,22 +1,19 @@
-# Nix Flake CI/CD
+# Nix Flake CI — full reproducible build + Docker image + multi-platform smoke tests
+#
+# Triggered on manual dispatch and pushes to main. For fast CI on every push, see ci.yml.
 #
 # Jobs:
 #   cleanup-images  — prunes old GHCR container images, keeping the 3 most recent
 #   build           — runs `nix build` on ubuntu-24.04, ubuntu-24.04-arm, and macos-15:
-#                       • ubuntu-24.04 builds .#cloudflare, pushes Docker image, and deploys
+#                       • ubuntu-24.04 builds .#cloudflare, pushes Docker image
 #                       • other runners build the default package (smoke test)
 #                       • all runners upload result/ as a per-OS artifact
-#   cleanup-preview — deletes the preview worker from Cloudflare when a branch is deleted
 #
-# Secrets required:
-#   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
-#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID
 name: Nix Flake ❄️
 on:
  workflow_dispatch:
  push:
- pull_request:
- delete:
+  branches: [main, master, stable, beta]
 
 jobs:
  cleanup-images:
@@ -100,35 +97,3 @@ jobs:
       docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
       docker push "${REGISTRY}/${IMAGE_NAME}:latest"
 
-   - name: Compute worker name
-     if: matrix.os == 'ubuntu-24.04' && github.event_name == 'push'
-     id: worker
-     run: |
-      if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-        echo "name=web-app" >> $GITHUB_OUTPUT
-      else
-        BRANCH=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
-        echo "name=web-app-${BRANCH}" >> $GITHUB_OUTPUT
-      fi
-
-   - name: Deploy to Cloudflare Workers
-     if: matrix.os == 'ubuntu-24.04' && github.event_name == 'push'
-     uses: cloudflare/wrangler-action@v3.14.1
-     with:
-      apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      wranglerVersion: "4.79.0"
-      command: deploy --name ${{ steps.worker.outputs.name }}
-     env:
-      SKIP_NIX_BUILD: "1"
-
- cleanup-preview:
-  if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
-  runs-on: ubuntu-latest
-  steps:
-   - name: Delete preview worker
-     run: |
-      BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
-      curl -s -X DELETE \
-        "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/web-app-${BRANCH}" \
-        -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}"

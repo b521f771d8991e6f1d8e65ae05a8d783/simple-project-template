@@ -102,7 +102,7 @@
           [
             git
             pkg-config
-            esbuild
+            zsh
             rustToolchain
             bacon
             wasm-pack
@@ -197,11 +197,9 @@
           npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
           npmConfigHook = pkgs.importNpmLock.npmConfigHook;
           nativeBuildInputs = with pkgs; [
-            esbuild
             removeReferencesTo
           ];
           env.NODE_ENV = "production";
-          env.ESBUILD_BINARY_PATH = "${pkgs.esbuild}/bin/esbuild";
           preBuild = ''
             export HOME=$TMPDIR
             # Make the WASM package available to the TypeScript build
@@ -327,10 +325,8 @@
         );
 
       in
-      rec {
-        # ── Exported packages ──────────────────────────────────────
-        # Build with: nix build .#<name>   (e.g. nix build .#wasm-pkg)
-        packages =
+      let
+        allPackages =
           {
             inherit cloudflare;
             "expo-app" = expoApp;
@@ -340,15 +336,19 @@
           // rustBins # native Rust binaries  (rust-<name>)
           // muslBins # MUSL static binaries  (musl-<name>, Linux only)
           // lib.optionalAttrs pkgs.stdenv.isLinux { "docker-image" = dockerImage; };
+      in
+      {
+        # ── Exported packages ──────────────────────────────────────
+        # Build with: nix build .#<name>   (e.g. nix build .#wasm-pkg)
+        packages = allPackages;
 
         # `nix flake check` builds every package except "default" (alias).
-        checks = builtins.removeAttrs packages [ "default" ];
+        checks = builtins.removeAttrs allPackages [ "default" ];
 
         # ── Development shell ──────────────────────────────────────
         # Enter with: nix develop
         devShells.default = pkgs.mkShell {
           packages = devTools;
-          env.ESBUILD_BINARY_PATH = "${pkgs.esbuild}/bin/esbuild";
         };
 
         formatter = pkgs.nixfmt-tree; # `nix fmt` uses nixfmt-tree
