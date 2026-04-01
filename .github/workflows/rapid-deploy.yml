@@ -13,7 +13,7 @@
 # Secrets required:
 #   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
 #   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID
-name: Rapid Release 🚀
+name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
@@ -23,7 +23,7 @@ on:
   delete:
 
 jobs:
-  deploy:
+  rapid-deploy:
     if: github.event_name != 'delete'
     runs-on: ubuntu-24.04
     permissions:
@@ -39,8 +39,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
+            ~/.cargo
             target
             node_modules
             /tmp/metro-cache
@@ -50,8 +49,10 @@ jobs:
 
       - name: Install system & CLI tools
         run: |
-          curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
-          cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
+          if ! command -v wasm-bindgen >/dev/null 2>&1; then
+            curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
+            cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
+          fi
           npm ci --ignore-scripts --prefer-offline
 
       # ── Build ──────────────────────────────────────────────────
