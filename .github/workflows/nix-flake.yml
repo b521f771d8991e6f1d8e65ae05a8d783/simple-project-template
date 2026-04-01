@@ -3,14 +3,12 @@
 # Jobs:
 #   ci-dockerfile   — builds the dev container Dockerfile to verify it is valid (no push)
 #   cleanup-images  — prunes old GHCR container images, keeping the 3 most recent
-#   build           — runs `nix build` on ubuntu-24.04, ubuntu-24.04-arm and macos-15:
-#                       • builds the default package + .#cloudflare
-#                       • builds and pushes the Docker image to GHCR (Linux only)
-#                       • uploads result/ as a per-OS artifact
-#                       • uploads result/ as the shared "cloudflare" artifact (ubuntu-24.04 only)
-#   deploy          — downloads the "cloudflare" artifact and deploys via wrangler:
-#                       • main  → production worker  (web-app)
-#                       • other → preview worker     (web-app-<branch>, workers.dev URL per branch)
+#   build-and-deploy — runs on ubuntu-24.04:
+#                       • builds .#cloudflare
+#                       • builds and pushes the Docker image to GHCR
+#                       • deploys to Cloudflare Workers (push only)
+#   build           — runs on ubuntu-24.04-arm and macos-15:
+#                       • builds the default package (smoke test)
 #   cleanup-preview — deletes the preview worker from Cloudflare when a branch is deleted
 #
 # Secrets required:
@@ -51,33 +49,28 @@ jobs:
       delete-only-untagged-versions: false
       token: ${{ secrets.GITHUB_TOKEN }}
 
- build:
+ # Primary job: build cloudflare + docker, then deploy
+ build-and-deploy:
   needs: [ci-dockerfile, cleanup-images]
   permissions:
    contents: read
    packages: write
    actions: write
    id-token: write
-  strategy:
-   matrix:
-    os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
-  runs-on: ${{ matrix.os }}
+  runs-on: ubuntu-24.04
   steps:
-   # Pin to version tags — for max supply-chain security upgrade to pinned SHAs
    - uses: actions/checkout@v6.0.2
 
    - name: Check for nix
      id: check_nix
      run: |
       if command -v nix >/dev/null 2>&1; then
-        echo "NIX_PRESENT=true" >> $GITHUB_ENV
         echo "present=true" >> $GITHUB_OUTPUT
       else
-        echo "NIX_PRESENT=false" >> $GITHUB_ENV
         echo "present=false" >> $GITHUB_OUTPUT
       fi
 
-   - uses: DeterminateSystems/flake-checker-action@v12 # latest
+   - uses: DeterminateSystems/flake-checker-action@v12
      with:
        fail-mode: false
 
@@ -90,54 +83,26 @@ jobs:
      with:
        use-flakehub: false
 
-   - name: Build and test Nix Flake
+   - name: Build Cloudflare artifact
      run: |
-      nix --extra-experimental-features "flakes nix-command" build . .#cloudflare
-
-   - name: Upload Cloudflare artifact
-     if: matrix.os == 'ubuntu-24.04'
-     uses: actions/upload-artifact@v7.0.0
-     with:
-      name: cloudflare
-      path: result/
-      if-no-files-found: error
-
-   - name: Upload build result
-     uses: actions/upload-artifact@v7.0.0
-     with:
-      name: result-${{ matrix.os }}
-      path: result/
-      if-no-files-found: error
+      nix --extra-experimental-features "flakes nix-command" build .#cloudflare
 
    - name: Push Docker image to GHCR
-     if: runner.os == 'Linux'
      env:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
      run: |
       nix --extra-experimental-features "flakes nix-command" build .#docker-image
       IMAGE_TAG="${GITHUB_SHA::8}"
-      nix --extra-experimental-features "flakes nix-command" shell nixpkgs#skopeo -c \
-        skopeo copy \
-          "docker-archive:$(readlink -f result)" \
-          "docker://${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}" \
-          --additional-tag "${REGISTRY}/${IMAGE_NAME}:latest" \
-          --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
-
- deploy-to-cloudflare:
-  needs: [build]
-  if: github.event_name == 'push'
-  runs-on: ubuntu-latest
-  timeout-minutes: 60
-  steps:
-   - uses: actions/checkout@v6.0.2
-
-   - uses: actions/download-artifact@v8.0.1
-     with:
-      name: cloudflare
-      path: result/
+      echo "${{ secrets.GITHUB_TOKEN }}" | docker login "$REGISTRY" -u "${{ github.actor }}" --password-stdin
+      docker load < "$(readlink -f result)"
+      docker tag web-app:latest "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+      docker tag web-app:latest "${REGISTRY}/${IMAGE_NAME}:latest"
+      docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+      docker push "${REGISTRY}/${IMAGE_NAME}:latest"
 
    - name: Compute worker name
+     if: github.event_name == 'push'
      id: worker
      run: |
       if [ "${{ github.ref }}" = "refs/heads/main" ]; then
@@ -148,6 +113,7 @@ jobs:
       fi
 
    - name: Deploy to Cloudflare Workers
+     if: github.event_name == 'push'
      uses: cloudflare/wrangler-action@v3.14.1
      with:
       apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -156,6 +122,46 @@ jobs:
       command: deploy --name ${{ steps.worker.outputs.name }}
      env:
       SKIP_NIX_BUILD: "1"
+
+ # Smoke-test builds on other platforms (no cloudflare, no deploy)
+ build:
+  needs: [ci-dockerfile, cleanup-images]
+  permissions:
+   contents: read
+   actions: write
+   id-token: write
+  strategy:
+   matrix:
+    os: [ubuntu-24.04-arm, macos-15]
+  runs-on: ${{ matrix.os }}
+  steps:
+   - uses: actions/checkout@v6.0.2
+
+   - name: Check for nix
+     id: check_nix
+     run: |
+      if command -v nix >/dev/null 2>&1; then
+        echo "present=true" >> $GITHUB_OUTPUT
+      else
+        echo "present=false" >> $GITHUB_OUTPUT
+      fi
+
+   - uses: DeterminateSystems/flake-checker-action@v12
+     with:
+       fail-mode: false
+
+   - uses: DeterminateSystems/nix-installer-action@v22
+     if: steps.check_nix.outputs.present == 'false'
+     with:
+       flakehub: false
+
+   - uses: DeterminateSystems/magic-nix-cache-action@v13
+     with:
+       use-flakehub: false
+
+   - name: Build Nix Flake
+     run: |
+      nix --extra-experimental-features "flakes nix-command" build .
 
  cleanup-preview:
   if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'

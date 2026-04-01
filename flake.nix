@@ -335,7 +335,7 @@
             inherit cloudflare;
             "expo-app" = expoApp;
             "wasm-pkg" = wasmPkg; # reuse the variable — no duplicate derivation
-            default = cloudflare; # matches wrangler.jsonc result/ layout
+            default = expoApp;
           }
           // rustBins # native Rust binaries  (rust-<name>)
           // muslBins # MUSL static binaries  (musl-<name>, Linux only)
