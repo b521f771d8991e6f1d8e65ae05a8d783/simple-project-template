@@ -33,13 +33,7 @@ jobs:
       - uses: actions/checkout@v6.0.2
 
       # ── Environment setup ──────────────────────────────────────
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+      - run: rustup target add wasm32-unknown-unknown
 
       - name: Restore build caches
         uses: actions/cache@v4
