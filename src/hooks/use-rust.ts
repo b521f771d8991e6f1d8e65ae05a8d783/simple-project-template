@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { initWasm } from "../lib/rust";
+import { initRust } from "../lib/rust";
 
-export function useWasm() {
+export function useRust() {
 	const [ready, setReady] = useState(false);
 	const [error, setError] = useState<Error | null>(null);
 
 	useEffect(() => {
-		initWasm()
+		initRust()
 			.then(() => setReady(true))
 			.catch(setError);
 	}, []);

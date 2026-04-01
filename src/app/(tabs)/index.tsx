@@ -5,12 +5,12 @@ import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useWasm } from '@/hooks/use-wasm';
+import { useRust } from '@/hooks/use-rust';
 import { get_1 } from '@/lib/rust';
 import { Link } from 'expo-router';
 
 export default function HomeScreen() {
-  const { ready, error } = useWasm();
+  const { ready, error } = useRust();
 
   return (
     <ParallaxScrollView
