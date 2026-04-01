@@ -1,9 +1,7 @@
-# Rapid Release — fast CF deploy + parallel Docker image build
+# Rapid Release — fast CF deploy for rapid tests. Tries to mimick the environment in `nix develop`, but faster and not reproducible
 #
 # Jobs:
 #   deploy  — npm build + wrangler deploy to Cloudflare (fast path, ~30-45s)
-#   docker  — builds all Dockerfile stages, pushes image to GHCR (parallel, non-blocking)
-#   cleanup-preview — deletes preview workers when a branch is deleted
 #
 # Secrets required:
 #   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
@@ -30,12 +28,22 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - uses: Swatinem/rust-cache@v2
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
+      - name: Restore build caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+            /tmp/metro-cache
+            /tmp/metro-file-map-*
+          key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'package-lock.json') }}
+          restore-keys: build-${{ runner.os }}-
 
       - name: Install system & CLI tools
         run: |
@@ -46,11 +54,13 @@ jobs:
       # ── Build ──────────────────────────────────────────────────
       - name: Build
         run: npm run build:cloudflare-worker
+        env:
+          TMPDIR: /tmp
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7.0.0
         with:
-          name: result-web
+          name: result-cloudflare-worker-rapid-release
           path: dist/
           if-no-files-found: error
 

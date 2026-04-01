@@ -11,7 +11,7 @@
     "compile:server": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify",
     "compile:worker": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --minify --format=esm --external:node:*",
     "build:node": "npm run compile:wasm && npm run compile:web && npm run compile:server",
-    "build:cloudflare-worker": "npm run compile:wasm && EXPO_NO_TELEMETRY=1 EXPO_USE_FAST_RESOLVER=1 npm run compile:web && npm run compile:worker",
+    "build:cloudflare-worker": "npm run compile:wasm && EXPO_NO_TELEMETRY=1 npm run compile:web && npm run compile:worker",
     "lint": "expo lint && cargo check"
   },
   "dependencies": {
