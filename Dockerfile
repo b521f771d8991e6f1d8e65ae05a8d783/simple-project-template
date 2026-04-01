@@ -1,6 +1,6 @@
 FROM docker.io/alpine:latest AS development
 
-RUN apk update && apk add nix curl wget alpine-sdk \
+RUN apk update && apk add nix curl wget alpine-sdk cmake ninja-build \
     rust cargo \
     npm
 
@@ -28,7 +28,8 @@ RUN npm run build:web
 
 FROM docker.io/alpine:latest
 
-RUN apk update && apk add nodejs
+RUN apk add nodejs
 COPY --from=build /workspaces/dist /app
 COPY --from=build /workspaces/target/release /app/bin
+
 CMD [ "node", "/app/main.js" ]

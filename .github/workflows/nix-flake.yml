@@ -14,9 +14,6 @@
 name: Nix Flake ❄️
 on:
  workflow_dispatch:
- push:
- pull_request:
- delete:
 
 jobs:
  cleanup-images:

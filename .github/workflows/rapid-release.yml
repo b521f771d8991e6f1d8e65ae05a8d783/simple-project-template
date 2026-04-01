@@ -1,0 +1,105 @@
+# Rapid Release — Docker-first fast path: build all stages, push image, deploy to CF
+#
+# Jobs:
+#   docker  — builds every Dockerfile stage, pushes image to GHCR,
+#             extracts Cloudflare assets from the final image, deploys
+#   cleanup-preview — deletes preview workers when a branch is deleted
+#
+# Secrets required:
+#   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
+#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID
+name: Rapid Release 🚀
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+  delete:
+
+jobs:
+  docker:
+    if: github.event_name != 'delete'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build all Docker stages
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract Cloudflare artifact from Docker image
+        run: |
+          CID=$(docker create "$REGISTRY/$IMAGE_NAME:$GITHUB_SHA")
+          mkdir -p result-cloudflare/assets
+          docker cp "$CID:/app/." result-cloudflare/assets/
+          docker rm "$CID"
+          rm -rf result-cloudflare/assets/bin
+          mv result-cloudflare/assets/worker.js result-cloudflare/worker.js 2>/dev/null || true
+          rm -f result-cloudflare/assets/main.js
+
+      - name: Compute worker name
+        if: github.event_name == 'push'
+        id: worker
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "name=web-app" >> $GITHUB_OUTPUT
+          else
+            BRANCH=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
+            echo "name=web-app-${BRANCH}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to Cloudflare Workers
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3.14.1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.79.0"
+          command: deploy --name ${{ steps.worker.outputs.name }}
+        env:
+          SKIP_NIX_BUILD: "1"
+
+      - name: Push Docker image to GHCR
+        run: |
+          IMAGE_TAG="${GITHUB_SHA::8}"
+          docker tag "$REGISTRY/$IMAGE_NAME:$GITHUB_SHA" "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+          docker tag "$REGISTRY/$IMAGE_NAME:$GITHUB_SHA" "$REGISTRY/$IMAGE_NAME:latest"
+          docker push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+          docker push "$REGISTRY/$IMAGE_NAME:latest"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: result-docker
+          path: result-cloudflare/
+          if-no-files-found: error
+
+  cleanup-preview:
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete preview worker
+        run: |
+          BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
+          curl -s -X DELETE \
+            "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/web-app-${BRANCH}" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}"
