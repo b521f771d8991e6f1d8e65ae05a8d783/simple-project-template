@@ -68,10 +68,11 @@ jobs:
      with:
        use-flakehub: false
 
-   - name: Build Cloudflare artifact
+   - name: Build default + Cloudflare artifact
      if: matrix.os == 'ubuntu-24.04'
      run: |
-      nix --extra-experimental-features "flakes nix-command" build . .#cloudflare
+      nix --extra-experimental-features "flakes nix-command" build .
+      nix --extra-experimental-features "flakes nix-command" build .#cloudflare --out-link result-cloudflare
 
    - name: Build Nix Flake
      if: matrix.os != 'ubuntu-24.04'
@@ -91,10 +92,10 @@ jobs:
       REGISTRY: ghcr.io
       IMAGE_NAME: ${{ github.repository }}
      run: |
-      nix --extra-experimental-features "flakes nix-command" build .#docker-image
+      nix --extra-experimental-features "flakes nix-command" build .#docker-image --out-link result-docker
       IMAGE_TAG="${GITHUB_SHA::8}"
       echo "${{ secrets.GITHUB_TOKEN }}" | docker login "$REGISTRY" -u "${{ github.actor }}" --password-stdin
-      LOADED=$(docker load < "$(readlink -f result)" | sed -n 's/^Loaded image: //p')
+      LOADED=$(docker load < "$(readlink -f result-docker)" | sed -n 's/^Loaded image: //p')
       docker tag "$LOADED" "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
       docker tag "$LOADED" "${REGISTRY}/${IMAGE_NAME}:latest"
       docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
