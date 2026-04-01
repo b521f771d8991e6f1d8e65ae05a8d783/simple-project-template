@@ -3,7 +3,7 @@
 # Jobs:
 #   cleanup-images  — prunes old GHCR container images, keeping the 3 most recent
 #   build           — runs `nix build` on ubuntu-24.04, ubuntu-24.04-arm, and macos-15:
-#                       • ubuntu-24.04 builds .#cloudflare, pushes Docker image, deploys to CF
+#                       • ubuntu-24.04 builds .#cloudflare-worker, pushes Docker image, deploys to CF
 #                       • other runners build the default package (smoke test)
 #                       • all runners upload result/ as a per-OS artifact
 #   cleanup-preview — deletes the preview worker from Cloudflare when a branch is deleted
@@ -73,7 +73,7 @@ jobs:
      if: matrix.os == 'ubuntu-24.04'
      run: |
       nix --extra-experimental-features "flakes nix-command" build .
-      nix --extra-experimental-features "flakes nix-command" build .#cloudflare --out-link result-cloudflare
+      nix --extra-experimental-features "flakes nix-command" build .#cloudflare-worker --out-link result-cloudflare
 
    - name: Build Nix Flake
      if: matrix.os != 'ubuntu-24.04'

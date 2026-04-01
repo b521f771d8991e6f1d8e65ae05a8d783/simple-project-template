@@ -139,7 +139,7 @@
         cargoVendorDir = craneLib.vendorCargoDeps { cargoLock = ./Cargo.lock; };
 
         # Expo web application — integrated Rust (WASM) + TypeScript build.
-        # Uses npm scripts build:node and build:cloudflare-worker which
+        # Uses npm scripts build:node and build:cloudflare-worker-worker which
         # invoke cargo internally (with vendored deps for nix sandbox).
         # Outputs:
         #   $out/bin/main.js    — Node.js server (for Docker)
@@ -187,8 +187,8 @@
         # Cloudflare deployment artifact: matches wrangler.jsonc layout
         #   result/worker.js      ← main
         #   result/assets/        ← assets.directory
-        cloudflare = pkgs.buildNpmPackage {
-          pname = "cloudflare";
+        cloudflare-worker = pkgs.buildNpmPackage {
+          pname = "cloudflare-worker";
           version = "0.0.0";
           inherit src;
           npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
@@ -206,15 +206,15 @@
           '';
           buildPhase = ''
             runHook preBuild
-            npm run build:cloudflare-worker
+            npm run build:cloudflare-worker-worker
             runHook postBuild
           '';
           installPhase = ''
             runHook preInstall
-            mkdir -p $out/assets
+            mkdir -p $out
             cp dist/worker.js $out/worker.js
             cp -r dist/. $out/assets/
-            rm $out/assets/main.js $out/assets/worker.js
+            rm $out/assets/worker.js
             runHook postInstall
           '';
         };
@@ -282,7 +282,7 @@
       let
         allPackages =
           {
-            inherit cloudflare;
+            inherit cloudflare-worker;
             "expo-app" = expoApp;
             default = expoApp;
           }

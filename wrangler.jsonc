@@ -1,7 +1,7 @@
 {
     // Cloudflare Workers deployment
     // Worker JS is bundled by wrangler from src/worker.ts.
-    // Static assets come from the nix build (.#cloudflare → result-cloudflare/assets) — skipped in CI via SKIP_NIX_BUILD=1.
+    // Static assets come from the nix build (.#cloudflare-worker → result-cloudflare/assets) — skipped in CI via SKIP_NIX_BUILD=1.
     "$schema": "node_modules/wrangler/config-schema.json",
     "name": "web-app",
     "main": "src/worker.ts",
@@ -13,7 +13,7 @@
         "directory": "result-cloudflare/assets"
     },
     "build": {
-        "command": "[ \"$SKIP_NIX_BUILD\" = \"1\" ] || nix build .#cloudflare --out-link result-cloudflare"
+        "command": "[ \"$SKIP_NIX_BUILD\" = \"1\" ] || nix build .#cloudflare-worker --out-link result-cloudflare"
     },
     "observability": {
         "enabled": false,
