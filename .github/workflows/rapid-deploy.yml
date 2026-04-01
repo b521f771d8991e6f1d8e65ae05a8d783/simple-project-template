@@ -25,16 +25,16 @@ on:
 jobs:
   rapid-deploy:
     if: github.event_name != 'delete'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@main
 
-      # ── 🔧 Environment setup ──────────────────────────────────
-      - name: 📦 Restore build caches
-        uses: actions/cache@v4
+      # ── Environment setup 🔧 ──────────────────────────────────
+      - name: Restore build caches 📦
+        uses: actions/cache@main
         with:
           path: |
             ~/.cargo
@@ -45,10 +45,10 @@ jobs:
           key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'package-lock.json') }}
           restore-keys: build-${{ runner.os }}-
 
-      - name: 🐇 Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Bun 🐇
+        uses: oven-sh/setup-bun@main
 
-      - name: 🦀🔧 Install tools & dependencies
+      - name: Install tools & dependencies 🦀🔧
         # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md most stuff is already installed :)
         run: |
           rustup target add wasm32-unknown-unknown
@@ -58,8 +58,8 @@ jobs:
           fi
           bun install --frozen-lockfile --ignore-scripts
 
-      # ── 🏗️ Build & Deploy ─────────────────────────────────────
-      - name: 🏗️ Build & deploy 🚀
+      # ── Build & Deploy 🏗️ ─────────────────────────────────────
+      - name: Build & deploy 🏗️🚀
         run: |
           bun run build:cloudflare-worker
           if [ "${{ github.event_name }}" = "push" ]; then
@@ -80,8 +80,8 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SKIP_NIX_BUILD: "1"
 
-      - name: 📤 Upload build artifacts
-        uses: actions/upload-artifact@v7.0.0
+      - name: Upload build artifacts 📤
+        uses: actions/upload-artifact@main
         with:
           name: result-cloudflare-worker-rapid-release
           path: dist/
@@ -89,9 +89,9 @@ jobs:
 
   cleanup-preview:
     if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
-      - name: 🧹 Delete preview worker
+      - name: Delete preview worker 🧹
         run: |
           BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
           curl -s -X DELETE \
