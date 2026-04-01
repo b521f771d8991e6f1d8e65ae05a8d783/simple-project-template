@@ -72,7 +72,7 @@ jobs:
             else
               WORKER_NAME="web-app-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
             fi
-            bunx wrangler deploy --name "$WORKER_NAME" --no-bundle --main result-cloudflare/worker.js
+            bunx wrangler deploy result-cloudflare/worker.js --name "$WORKER_NAME" --no-bundle
           fi
         env:
           TMPDIR: /tmp
