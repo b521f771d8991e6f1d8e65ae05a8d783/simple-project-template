@@ -1,8 +1,6 @@
-FROM docker.io/alpine:latest AS development
+FROM docker.io/rust:alpine AS development
 
-RUN apk update && apk add nix curl wget alpine-sdk cmake ninja-build \
-    rust cargo \
-    npm
+RUN apk update && apk add nix curl wget alpine-sdk cmake ninja-build npm
 
 WORKDIR /workspaces
 
@@ -16,19 +14,13 @@ RUN npm install
 
 COPY . .
 
-FROM cache AS check
-
-RUN cargo check
-RUN npx tsc -noEmit
-
 FROM cache AS build
 
 RUN cargo build --release
 RUN npm run build:web
 
-FROM docker.io/alpine:latest
+FROM docker.io/node:alpine
 
-RUN apk add nodejs
 COPY --from=build /workspaces/dist /app
 COPY --from=build /workspaces/target/release /app/bin
 
