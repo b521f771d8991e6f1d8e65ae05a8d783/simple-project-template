@@ -48,6 +48,7 @@ jobs:
           restore-keys: build-${{ runner.os }}-
 
       - name: Install system & CLI tools
+        # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md most stuff is already installed :)
         run: |
           if ! command -v wasm-bindgen >/dev/null 2>&1; then
             curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
