@@ -61,7 +61,7 @@ jobs:
       # ── Build & Deploy ───────────────────────────────────────────
       - name: Build & deploy 🚀
         run: |
-          npm run build:cloudflare-worker
+          bun run build:cloudflare-worker
           if [ "${{ github.event_name }}" = "push" ]; then
             mkdir -p result-cloudflare/assets
             cp -r dist/. result-cloudflare/assets/
@@ -72,7 +72,7 @@ jobs:
             else
               WORKER_NAME="web-app-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
             fi
-            npx wrangler deploy --name "$WORKER_NAME"
+            bunx wrangler deploy --name "$WORKER_NAME"
           fi
         env:
           TMPDIR: /tmp
