@@ -1,13 +1,17 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet } from 'react-native';
 
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useWasm } from '@/hooks/use-wasm';
+import { get_1 } from '@/lib/wasm';
 import { Link } from 'expo-router';
 
 export default function HomeScreen() {
+  const { ready, error } = useWasm();
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -20,6 +24,18 @@ export default function HomeScreen() {
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
+      </ThemedView>
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Rust + WASM</ThemedText>
+        {error ? (
+          <ThemedText>WASM failed: {error.message}</ThemedText>
+        ) : !ready ? (
+          <ActivityIndicator />
+        ) : (
+          <ThemedText>
+            Rust says: <ThemedText type="defaultSemiBold">{get_1()}</ThemedText>
+          </ThemedText>
+        )}
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
