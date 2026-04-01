@@ -25,6 +25,8 @@ config.server.enhanceMiddleware = (middleware) => {
 	};
 };
 
+config.transformer.inlineRequires = true;
+
 module.exports = withNativeWind(config, {
 	input: path.resolve(__dirname, "./src/global.css"),
 });
