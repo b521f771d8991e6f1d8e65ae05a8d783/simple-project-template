@@ -158,6 +158,38 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		setSessionId(null);
 	};
 
+	// Commit history
+	interface Commit { hash: string; message: string; ago: string }
+	const [commits, setCommits] = useState<Commit[]>([]);
+	const [showCommits, setShowCommits] = useState(false);
+
+	const loadCommits = async () => {
+		const data = await dreamFetch({ action: "listCommits" });
+		setCommits(data.commits ?? []);
+		setShowCommits(true);
+	};
+
+	const revertCommit = async (hash: string) => {
+		setLoading(true);
+		setStatus("Reverting...");
+		try {
+			const data = await dreamFetch({ action: "revert", commitHash: hash });
+			if (data.error) throw new Error(data.error);
+			const msg: DreamMessage = { role: "assistant", content: data.summary };
+			const id = await saveMessage(msg).catch(() => undefined);
+			setMessages((prev) => [...prev, { ...msg, id }]);
+			setShowCommits(false);
+			loadCommits(); // refresh
+		} catch (err) {
+			const msg: DreamMessage = { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "unknown"}` };
+			const id = await saveMessage(msg).catch(() => undefined);
+			setMessages((prev) => [...prev, { ...msg, id }]);
+		} finally {
+			setLoading(false);
+			setStatus(null);
+		}
+	};
+
 	if (!visible) return null;
 
 	return (
@@ -169,7 +201,10 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				<View style={[styles.header, { borderBottomColor: c.border, cursor: "grab" } as any]} {...panResponder.panHandlers}>
 					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
 					<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-						{messages.length > 0 && (
+						<Pressable onPress={() => { if (showCommits) { setShowCommits(false); } else { loadCommits(); } }} hitSlop={8}>
+							<Text style={{ color: showCommits ? c.accent : c.textSecondary, fontSize: 12 }}>{showCommits ? "Chat" : "History"}</Text>
+						</Pressable>
+						{messages.length > 0 && !showCommits && (
 							<Pressable onPress={handleClear} hitSlop={8}>
 								<Text style={{ color: c.textSecondary, fontSize: 12 }}>Clear</Text>
 							</Pressable>
@@ -180,8 +215,34 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					</View>
 				</View>
 
+				{/* Commit history view */}
+				{showCommits && (
+					<ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
+						{commits.length === 0 && (
+							<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
+								No dream commits yet.
+							</Text>
+						)}
+						{commits.map((commit) => (
+							<View key={commit.hash} style={[styles.commitRow, { borderBottomColor: c.border }]}>
+								<View style={{ flex: 1, gap: 2 }}>
+									<Text style={{ color: c.text, fontSize: 13 }} numberOfLines={1}>{commit.message}</Text>
+									<Text style={{ color: c.textSecondary, fontSize: 11 }}>{commit.hash.slice(0, 8)} · {commit.ago}</Text>
+								</View>
+								<Pressable
+									onPress={() => revertCommit(commit.hash)}
+									disabled={loading}
+									style={[styles.revertBtn, { opacity: loading ? 0.4 : 1 }]}
+								>
+									<Text style={{ color: "#ef4444", fontSize: 12, fontWeight: "500" }}>Revert</Text>
+								</Pressable>
+							</View>
+						))}
+					</ScrollView>
+				)}
+
 				{/* Messages */}
-				<ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
+				{!showCommits && <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
 					{initialized && messages.length === 0 && (
 						<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
 							{t("dream.empty")}
@@ -229,7 +290,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 							)}
 						</View>
 					)}
-				</ScrollView>
+				</ScrollView>}
 
 				{/* Input */}
 				<View style={[styles.inputRow, { borderTopColor: c.border }]}>
@@ -338,5 +399,16 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		paddingHorizontal: 14,
 		paddingVertical: 8,
+	},
+	commitRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingVertical: 10,
+		borderBottomWidth: StyleSheet.hairlineWidth,
+		gap: 10,
+	},
+	revertBtn: {
+		paddingHorizontal: 10,
+		paddingVertical: 4,
 	},
 });

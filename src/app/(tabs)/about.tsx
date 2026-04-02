@@ -33,10 +33,6 @@ export default function AboutScreen() {
 	}, []);
 
 	const expoVersion = Constants.expoConfig?.sdkVersion ?? "unknown";
-	const reactNativeVersion = Platform.constants?.reactNativeVersion;
-	const rnVersion = reactNativeVersion
-		? `${reactNativeVersion.major}.${reactNativeVersion.minor}.${reactNativeVersion.patch}`
-		: "unknown";
 
 	return (
 		<ThemedView className="flex-1">
@@ -66,7 +62,6 @@ export default function AboutScreen() {
 					>
 						<ThemedText type="subtitle" style={{ marginBottom: 8 }}>Toolchain</ThemedText>
 						<Row label="Expo SDK" value={expoVersion} />
-						<Row label="React Native" value={rnVersion} />
 						<Row label="Expo Router" value={Constants.expoConfig?.extra?.expoRouterVersion ?? "~6.x"} />
 						<Row label="TypeScript" value="~5.9" />
 					</ThemedView>

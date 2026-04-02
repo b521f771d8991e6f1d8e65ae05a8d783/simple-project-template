@@ -34,7 +34,36 @@ export async function POST(req: Request): Promise<Response> {
 		return Response.json({ error: `Dream Mode is disabled (APP_MODE=${appMode})` }, { status: 403 });
 	}
 
-	const { prompt, sessionId, screenshot, pollJobId } = await req.json();
+	const { prompt, sessionId, screenshot, pollJobId, action, commitHash } = await req.json();
+
+	// ── List recent dream commits ──────────────────────────────
+	if (action === "listCommits") {
+		try {
+			const { stdout } = await git("log", "--oneline", "--grep=dream:", "-20", "--format=%H|%s|%ar");
+			const commits = stdout.trim().split("\n").filter(Boolean).map((line: string) => {
+				const [hash, ...rest] = line.split("|");
+				const msg = rest.slice(0, -1).join("|");
+				const ago = rest[rest.length - 1];
+				return { hash, message: msg, ago };
+			});
+			return Response.json({ commits });
+		} catch {
+			return Response.json({ commits: [] });
+		}
+	}
+
+	// ── Revert to a specific commit ────────────────────────────
+	if (action === "revert" && commitHash) {
+		try {
+			await git("revert", "--no-commit", commitHash);
+			await git("commit", "-m", `dream: revert ${commitHash.slice(0, 8)}`);
+			return Response.json({ summary: `Reverted commit ${commitHash.slice(0, 8)}` });
+		} catch (err: unknown) {
+			// Clean up failed revert
+			await git("revert", "--abort").catch(() => {});
+			return Response.json({ error: err instanceof Error ? err.message : "Revert failed" }, { status: 500 });
+		}
+	}
 
 	// ── Poll: return current job status ────────────────────────
 	if (pollJobId) {
