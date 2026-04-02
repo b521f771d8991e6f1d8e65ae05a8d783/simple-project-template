@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal } from "react-native";
+import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal, PanResponder, Dimensions } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import { Colors } from "@/constants/theme";
@@ -33,7 +33,24 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const [loading, setLoading] = useState(false);
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const [initialized, setInitialized] = useState(false);
+	const [pos, setPos] = useState({ x: Dimensions.get("window").width - 396, y: 56 });
+	const dragOffset = useRef({ x: 0, y: 0 });
 	const scrollRef = useRef<ScrollView>(null);
+
+	const panResponder = useRef(
+		PanResponder.create({
+			onStartShouldSetPanResponder: () => true,
+			onPanResponderGrant: (_, gesture) => {
+				dragOffset.current = { x: pos.x - gesture.x0, y: pos.y - gesture.y0 };
+			},
+			onPanResponderMove: (_, gesture) => {
+				setPos({
+					x: gesture.moveX + dragOffset.current.x,
+					y: gesture.moveY + dragOffset.current.y,
+				});
+			},
+		}),
+	).current;
 
 	// Reload history from DB every time the panel opens (survives hot reloads)
 	const reload = useCallback(async () => {
@@ -68,16 +85,19 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		if (messages.length > 0) scrollToEnd();
 	}, [messages.length, scrollToEnd]);
 
+	const [status, setStatus] = useState<string | null>(null);
+
 	const send = async () => {
 		const prompt = input.trim();
 		if (!prompt || loading) return;
 
 		console.log(`[Dream] Sending: "${prompt.slice(0, 80)}"`);
 		const userMsg: DreamMessage = { role: "user", content: prompt };
-		const userId = await saveMessage(userMsg).catch((e) => { console.error("[Dream] Save user msg failed:", e); return undefined; });
+		const userId = await saveMessage(userMsg).catch(() => undefined);
 		setMessages((prev) => [...prev, { ...userMsg, id: userId }]);
 		setInput("");
 		setLoading(true);
+		setStatus("Starting Claude Code...");
 
 		try {
 			let screenshot: string | undefined;
@@ -89,30 +109,46 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				} catch { /* optional */ }
 			}
 
-			console.log("[Dream] Calling API...");
-			const data = await dreamFetch({ prompt, sessionId, screenshot });
-			console.log("[Dream] API response:", JSON.stringify(data).slice(0, 200));
-			if (data.sessionId) setSessionId(data.sessionId);
+			// Start the job
+			const startRes = await dreamFetch({ prompt, sessionId, screenshot });
+			if (startRes.error) throw new Error(startRes.error);
+			const jobId = startRes.jobId;
+			console.log(`[Dream] Job started: ${jobId}`);
 
-			if (data.error) {
-				const errMsg: DreamMessage = { role: "assistant", content: `Error: ${data.error}` };
-				const errId = await saveMessage(errMsg).catch(() => undefined);
-				setMessages((prev) => [...prev, { ...errMsg, id: errId }]);
-			} else {
-				const assistantMsg: DreamMessage = {
-					role: "assistant",
-					content: data.summary,
-					hasChanges: data.hasChanges,
-				};
-				const aId = await saveMessage({ ...assistantMsg, sessionId: data.sessionId }).catch(() => undefined);
-				setMessages((prev) => [...prev, { ...assistantMsg, id: aId }]);
+			// Poll until done
+			let result: any = null;
+			while (true) {
+				await new Promise((r) => setTimeout(r, 1000));
+				const poll = await dreamFetch({ pollJobId: jobId });
+
+				// Show latest log line as status
+				if (poll.logs?.length) {
+					const lastLog = poll.logs[poll.logs.length - 1];
+					setStatus(lastLog);
+					for (const log of poll.logs) console.log(`[Dream] ${log}`);
+				}
+
+				if (poll.status === "done" || poll.status === "error") {
+					result = poll;
+					break;
+				}
 			}
+
+			if (result.status === "error") throw new Error(result.error ?? "Unknown error");
+			if (result.sessionId) setSessionId(result.sessionId);
+
+			const finalText = (result.summary ?? "Done.").replace(/\n{3,}/g, "\n\n").trim();
+			const assistantMsg: DreamMessage = { role: "assistant", content: finalText, hasChanges: result.hasChanges };
+			const aId = await saveMessage({ ...assistantMsg, sessionId: result.sessionId }).catch(() => undefined);
+			setMessages((prev) => [...prev, { ...assistantMsg, id: aId }]);
+
 		} catch (err) {
-			const errMsg: DreamMessage = { role: "assistant", content: `Connection error: ${err instanceof Error ? err.message : "unknown"}` };
+			const errMsg: DreamMessage = { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "unknown"}` };
 			const errId = await saveMessage(errMsg).catch(() => undefined);
 			setMessages((prev) => [...prev, { ...errMsg, id: errId }]);
 		} finally {
 			setLoading(false);
+			setStatus(null);
 		}
 	};
 
@@ -128,9 +164,9 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		<Modal visible transparent animationType="fade" onRequestClose={onClose}>
 			<Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-			<Pressable style={[styles.panel, { backgroundColor: c.background, borderColor: c.border }]} onPress={(e) => e.stopPropagation()}>
-				{/* Header */}
-				<View style={[styles.header, { borderBottomColor: c.border }]}>
+			<Pressable style={[styles.panel, { backgroundColor: c.background, borderColor: c.border, top: pos.y, left: pos.x, right: undefined }]} onPress={(e) => e.stopPropagation()}>
+				{/* Header — drag handle */}
+				<View style={[styles.header, { borderBottomColor: c.border, cursor: "grab" } as any]} {...panResponder.panHandlers}>
 					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
 					<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
 						{messages.length > 0 && (
@@ -184,8 +220,13 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					))}
 
 					{loading && (
-						<View style={[styles.bubble, { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" }]}>
+						<View style={[styles.bubble, { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0", gap: 6 }]}>
 							<ActivityIndicator size="small" color={c.accent} />
+							{status && (
+								<Text style={{ color: c.textSecondary, fontSize: 11, fontFamily: Platform.OS === "web" ? "monospace" : "Courier" }}>
+									{status}
+								</Text>
+							)}
 						</View>
 					)}
 				</ScrollView>
@@ -224,8 +265,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 const styles = StyleSheet.create({
 	panel: {
 		position: "absolute",
-		top: 56,
-		right: 16,
 		width: 380,
 		maxWidth: "90%",
 		height: 480,
