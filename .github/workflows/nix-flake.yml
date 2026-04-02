@@ -14,10 +14,8 @@
 name: Nix Flake ❄️
 on:
  workflow_dispatch:
- pull_request:
-    branches: [main, master, stable, dev, beta]
  push:
-    branches: [main, master, stable, dev, beta]
+    tags: ['*']
 
 jobs:
  cleanup-images:
