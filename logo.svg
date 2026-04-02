@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Modern geometric logo: interlocking brackets forming a diamond/gem shape -->
+  <!-- Represents scaffolding, structure, building blocks -->
+  <path d="M32 4 L12 24 L32 44 L52 24 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+  <path d="M32 20 L22 32 L32 44 L42 32 Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/>
+  <path d="M32 44 L22 54 L32 60 L42 54 Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08"/>
+</svg>

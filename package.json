@@ -18,10 +18,12 @@
     "lint": "expo lint && cargo check",
     "version": "npx tsx scripts/version.ts",
     "tag": "npx tsx scripts/tag.ts",
-    "tag:push": "npx tsx scripts/tag.ts --push"
+    "tag:push": "npx tsx scripts/tag.ts --push",
+    "generate:icons": "npx tsx scripts/generate-icons.ts"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.59.1",
+    "@resvg/resvg-js": "^2.6.2",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
@@ -58,6 +60,7 @@
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
+    "react-native-svg": "^15.15.4",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
     "react-redux": "^9.2.0",

@@ -1,14 +1,20 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
 import '../global.css';
 
-import { RustProvider } from '@/lib/rust';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { RustProvider } from '@/lib/rust';
 import { store } from '@/redux/store';
 import { Provider } from 'react-redux';
+
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  document.title = Constants.expoConfig?.name!;
+}
 
 SplashScreen.preventAutoHideAsync();
 
