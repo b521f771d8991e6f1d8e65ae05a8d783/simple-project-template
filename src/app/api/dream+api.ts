@@ -65,6 +65,7 @@ export async function POST(req: Request): Promise<Response> {
 	const args = [
 		"claude",
 		"--print",
+		"--verbose",
 		"--output-format", "stream-json",
 		"--dangerously-skip-permissions",
 	];
@@ -90,7 +91,7 @@ export async function POST(req: Request): Promise<Response> {
 	console.log(`[Dream] Job ${jobId}: "${prompt.slice(0, 80)}"`);
 
 	// Run in background
-	const proc = spawn("npx", args, { cwd, env: { ...process.env } });
+	const proc = spawn("npx", args, { cwd, env: { ...process.env }, stdio: ["ignore", "pipe", "pipe"] });
 	const start = Date.now();
 
 	proc.stdout.on("data", (chunk: Buffer) => {
@@ -126,6 +127,12 @@ export async function POST(req: Request): Promise<Response> {
 	proc.on("close", async (code) => {
 		const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 		console.log(`[Dream] ${jobId} exited code=${code} in ${elapsed}s`);
+
+		if (code !== 0 && !job.summary) {
+			job.status = "error";
+			job.error = job.logs.join("\n") || `Process exited with code ${code}`;
+			return;
+		}
 
 		try {
 			const { stdout: status } = await git("status", "--porcelain");

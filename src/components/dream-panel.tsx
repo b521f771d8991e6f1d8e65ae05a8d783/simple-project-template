@@ -97,7 +97,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		setMessages((prev) => [...prev, { ...userMsg, id: userId }]);
 		setInput("");
 		setLoading(true);
-		setStatus("Starting Claude Code...");
+		setStatus("Thinking...");
 
 		try {
 			let screenshot: string | undefined;
