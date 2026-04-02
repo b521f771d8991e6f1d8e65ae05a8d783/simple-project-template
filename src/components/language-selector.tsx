@@ -21,6 +21,8 @@ export const LANGUAGES: Language[] = [
 	{ code: "ja", flag: "🇯🇵", name: "日本語" },
 	{ code: "zh", flag: "🇨🇳", name: "中文" },
 	{ code: "ko", flag: "🇰🇷", name: "한국어" },
+	{ code: "he", flag: "🇮🇱", name: "עברית" },
+	{ code: "la", flag: "🏛️", name: "Latina" },
 ];
 
 interface LanguageSelectorProps {

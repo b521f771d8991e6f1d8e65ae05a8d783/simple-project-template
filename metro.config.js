@@ -13,8 +13,17 @@ if (
 
 const config = getDefaultConfig(__dirname);
 
-// Add SVG asset support
-config.resolver.assetExts.push("svg");
+// Add SVG and WASM asset support (WASM needed for expo-sqlite on web)
+config.resolver.assetExts.push("svg", "wasm");
+
+// COEP/COOP headers required for SharedArrayBuffer (expo-sqlite web)
+config.server.enhanceMiddleware = (middleware) => {
+	return (req, res, next) => {
+		res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
+		res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+		middleware(req, res, next);
+	};
+};
 
 config.transformer.inlineRequires = true;
 

@@ -21,33 +21,13 @@ export async function POST(req: Request): Promise<Response> {
 		return Response.json({ error: `Dream Mode is disabled (APP_MODE=${appMode})` }, { status: 403 });
 	}
 
-	const { prompt, action, sessionId, screenshot } = await req.json();
+	const { prompt, sessionId, screenshot } = await req.json();
 
-	// ── Keep: the commit is already on the branch, nothing to do ──
-	if (action === "keep") {
-		return Response.json({ summary: "Changes kept." });
-	}
-
-	// ── Discard: undo the last dream commit ──
-	if (action === "discard") {
-		try {
-			await git("reset", "--hard", "HEAD~1");
-			return Response.json({ summary: "Changes discarded." });
-		} catch (err: unknown) {
-			return Response.json({ error: err instanceof Error ? err.message : "Discard failed" }, { status: 500 });
-		}
-	}
-
-	// ── Dream: stash, run Claude Code, commit ──
 	if (!prompt?.trim()) {
 		return Response.json({ error: "prompt is required" }, { status: 400 });
 	}
 
 	try {
-		// Stash any uncommitted work
-		const { stdout: stashOut } = await git("stash", "push", "-m", "dream: pre-dream stash");
-		const didStash = !stashOut.includes("No local changes");
-
 		// Save screenshot as temp file for Claude Code to reference
 		let screenshotPath: string | undefined;
 		if (screenshot) {
@@ -107,11 +87,6 @@ export async function POST(req: Request): Promise<Response> {
 		if (hasChanges) {
 			await git("add", "-A");
 			await exec("git", ["commit", "-m", `dream: ${prompt.slice(0, 72)}`], { cwd });
-		}
-
-		// Restore stashed work on top
-		if (didStash) {
-			await git("stash", "pop").catch(() => {});
 		}
 
 		return Response.json({
