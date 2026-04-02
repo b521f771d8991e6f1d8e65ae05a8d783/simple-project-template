@@ -103,8 +103,19 @@ jobs:
       docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
       docker push "${REGISTRY}/${IMAGE_NAME}:latest"
 
-   - name: Compute worker name
+   - name: Check Cloudflare secrets
      if: matrix.os == 'ubuntu-24.04' && github.event_name == 'push'
+     id: cf
+     run: |
+      if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+        echo "available=true" >> $GITHUB_OUTPUT
+      else
+        echo "available=false" >> $GITHUB_OUTPUT
+        echo "::warning::Skipping Cloudflare deploy — CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID secrets are not set"
+      fi
+
+   - name: Compute worker name
+     if: matrix.os == 'ubuntu-24.04' && github.event_name == 'push' && steps.cf.outputs.available == 'true'
      id: worker
      run: |
       source .env
@@ -116,7 +127,7 @@ jobs:
       fi
 
    - name: Deploy to Cloudflare Workers
-     if: matrix.os == 'ubuntu-24.04' && github.event_name == 'push'
+     if: matrix.os == 'ubuntu-24.04' && github.event_name == 'push' && steps.cf.outputs.available == 'true'
      uses: cloudflare/wrangler-action@v3.14.1
      with:
       apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -131,7 +142,17 @@ jobs:
   runs-on: ubuntu-latest
   steps:
    - uses: actions/checkout@v6.0.2
+   - name: Check Cloudflare secrets
+     id: cf
+     run: |
+      if [ -n "${{ secrets.CLOUDFLARE_API_TOKEN }}" ] && [ -n "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+        echo "available=true" >> $GITHUB_OUTPUT
+      else
+        echo "available=false" >> $GITHUB_OUTPUT
+        echo "::warning::Skipping Cloudflare cleanup — CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID secrets are not set"
+      fi
    - name: Delete preview worker
+     if: steps.cf.outputs.available == 'true'
      run: |
       source .env
       BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
