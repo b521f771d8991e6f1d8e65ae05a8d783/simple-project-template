@@ -26,15 +26,6 @@ export default function HomeScreen() {
 						lightColor="#f9fafb"
 						darkColor="#111"
 					>
-						<ThemedText type="subtitle">{t("home.getStarted")}</ThemedText>
-						<ThemedText>{t("home.getStartedDesc")}</ThemedText>
-					</ThemedView>
-
-					<ThemedView
-						className="rounded-2xl p-4 gap-2 w-full"
-						lightColor="#f9fafb"
-						darkColor="#111"
-					>
 						<ThemedText type="subtitle">{t("home.dreamMode")}</ThemedText>
 						<ThemedText>{t("home.dreamModeDesc")}</ThemedText>
 					</ThemedView>

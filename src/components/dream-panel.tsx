@@ -1,11 +1,13 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal } from "react-native";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { saveMessage, updateMessage, loadMessages, clearHistory } from "@/lib/dream-history";
 import { useTranslation } from "@/lib/i18n";
 
 interface Message {
+	id?: number;
 	role: "user" | "assistant";
 	content: string;
 	hasChanges?: boolean;
@@ -38,13 +40,25 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const scrollRef = useRef<ScrollView>(null);
 
+	// Load persisted history on mount
+	useEffect(() => {
+		loadMessages().then((saved) => {
+			setMessages(saved);
+			// Restore session ID from the last assistant message
+			const lastWithSession = [...saved].reverse().find((m) => m.sessionId);
+			if (lastWithSession?.sessionId) setSessionId(lastWithSession.sessionId);
+		}).catch(() => {});
+	}, []);
+
 	const scrollToEnd = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
 	const send = async () => {
 		const prompt = input.trim();
 		if (!prompt || loading) return;
 
-		setMessages((prev) => [...prev, { role: "user", content: prompt }]);
+		const userMsg: Message = { role: "user", content: prompt };
+		const userId = await saveMessage(userMsg).catch(() => undefined);
+		setMessages((prev) => [...prev, { ...userMsg, id: userId }]);
 		setInput("");
 		setLoading(true);
 
@@ -63,23 +77,22 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 			if (data.sessionId) setSessionId(data.sessionId);
 
 			if (data.error) {
-				setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${data.error}` }]);
+				const errMsg: Message = { role: "assistant", content: `Error: ${data.error}` };
+				const errId = await saveMessage(errMsg).catch(() => undefined);
+				setMessages((prev) => [...prev, { ...errMsg, id: errId }]);
 			} else {
-				setMessages((prev) => [
-					...prev,
-					{
-						role: "assistant",
-						content: data.summary,
-						branch: data.branch,
-						hasChanges: data.hasChanges,
-					},
-				]);
+				const assistantMsg: Message = {
+					role: "assistant",
+					content: data.summary,
+					hasChanges: data.hasChanges,
+				};
+				const aId = await saveMessage({ ...assistantMsg, sessionId: data.sessionId }).catch(() => undefined);
+				setMessages((prev) => [...prev, { ...assistantMsg, id: aId }]);
 			}
 		} catch (err) {
-			setMessages((prev) => [
-				...prev,
-				{ role: "assistant", content: `Connection error: ${err instanceof Error ? err.message : "unknown"}` },
-			]);
+			const errMsg: Message = { role: "assistant", content: `Connection error: ${err instanceof Error ? err.message : "unknown"}` };
+			const errId = await saveMessage(errMsg).catch(() => undefined);
+			setMessages((prev) => [...prev, { ...errMsg, id: errId }]);
 		} finally {
 			setLoading(false);
 			scrollToEnd();
@@ -91,9 +104,12 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		try {
 			const data = await dreamFetch({ action });
 			setMessages((prev) =>
-				prev.map((m, i) =>
-					i === msgIndex ? { ...m, content: `${m.content}\n\n${data.summary ?? data.error}`, hasChanges: false } : m,
-				),
+				prev.map((m, i) => {
+					if (i !== msgIndex) return m;
+					const updated = { ...m, content: `${m.content}\n\n${data.summary ?? data.error}`, hasChanges: false };
+					if (m.id) updateMessage(m.id, { content: updated.content, hasChanges: false }).catch(() => {});
+					return updated;
+				}),
 			);
 		} catch (err) {
 			setMessages((prev) => [
@@ -114,9 +130,16 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				{/* Header */}
 				<View style={[styles.header, { borderBottomColor: c.border }]}>
 					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
-					<Pressable onPress={onClose} hitSlop={8}>
-						<Text style={{ color: c.textSecondary, fontSize: 18 }}>✕</Text>
-					</Pressable>
+					<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+						{messages.length > 0 && (
+							<Pressable onPress={() => { clearHistory().catch(() => {}); setMessages([]); setSessionId(null); }} hitSlop={8}>
+								<Text style={{ color: c.textSecondary, fontSize: 12 }}>Clear</Text>
+							</Pressable>
+						)}
+						<Pressable onPress={onClose} hitSlop={8}>
+							<Text style={{ color: c.textSecondary, fontSize: 18 }}>✕</Text>
+						</Pressable>
+					</View>
 				</View>
 
 				{/* Messages */}
