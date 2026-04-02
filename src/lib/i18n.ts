@@ -1,0 +1,220 @@
+import { createContext, useContext } from "react";
+
+export const LanguageContext = createContext<string>("en");
+
+export function useTranslation() {
+	const lang = useContext(LanguageContext);
+	return (key: keyof typeof en): string => {
+		const table = translations[lang] ?? en;
+		return table[key] ?? en[key] ?? key;
+	};
+}
+
+const en = {
+	// Nav
+	"nav.home": "Home",
+	"nav.explore": "Explore",
+	"nav.dream": "Dream",
+
+	// Home
+	"home.title": "Welcome",
+	"home.getStarted": "Get started",
+	"home.getStartedDesc": "Edit app/(tabs)/index.tsx to start building your app.",
+
+	// Explore
+	"explore.title": "Explore",
+	"explore.routing": "File-based routing",
+	"explore.routingDesc": "Screens live in src/app/. Each file becomes a route automatically via Expo Router.",
+	"explore.crossPlatform": "Cross-platform",
+	"explore.crossPlatformDesc": "This app runs on iOS, Android, and the web from a single codebase using React Native and Expo.",
+	"explore.theme": "Light and dark mode",
+	"explore.themeDesc": "The app adapts to the system color scheme automatically. Colors are defined in src/constants/theme.ts.",
+
+	// Dream
+	"dream.title": "Dream Mode",
+	"dream.empty": "Describe what you want to change.\nThe app will modify itself in real-time.",
+	"dream.placeholder": "Describe a change...",
+	"dream.send": "Send",
+	"dream.keep": "Keep",
+	"dream.discard": "Discard",
+};
+
+type Translations = typeof en;
+
+const de: Translations = {
+	"nav.home": "Start",
+	"nav.explore": "Entdecken",
+	"nav.dream": "Dream",
+	"home.title": "Willkommen",
+	"home.getStarted": "Loslegen",
+	"home.getStartedDesc": "Bearbeite app/(tabs)/index.tsx, um mit der App zu beginnen.",
+	"explore.title": "Entdecken",
+	"explore.routing": "Dateibasiertes Routing",
+	"explore.routingDesc": "Screens befinden sich in src/app/. Jede Datei wird automatisch zu einer Route über Expo Router.",
+	"explore.crossPlatform": "Plattformübergreifend",
+	"explore.crossPlatformDesc": "Diese App läuft auf iOS, Android und im Web aus einer einzigen Codebasis mit React Native und Expo.",
+	"explore.theme": "Hell- und Dunkelmodus",
+	"explore.themeDesc": "Die App passt sich automatisch an das Farbschema des Systems an. Farben sind in src/constants/theme.ts definiert.",
+	"dream.title": "Dream Mode",
+	"dream.empty": "Beschreibe, was du ändern möchtest.\nDie App passt sich in Echtzeit an.",
+	"dream.placeholder": "Beschreibe eine Änderung...",
+	"dream.send": "Senden",
+	"dream.keep": "Behalten",
+	"dream.discard": "Verwerfen",
+};
+
+const fr: Translations = {
+	"nav.home": "Accueil",
+	"nav.explore": "Explorer",
+	"nav.dream": "Dream",
+	"home.title": "Bienvenue",
+	"home.getStarted": "Commencer",
+	"home.getStartedDesc": "Modifiez app/(tabs)/index.tsx pour commencer à construire votre app.",
+	"explore.title": "Explorer",
+	"explore.routing": "Routage basé sur les fichiers",
+	"explore.routingDesc": "Les écrans se trouvent dans src/app/. Chaque fichier devient automatiquement une route via Expo Router.",
+	"explore.crossPlatform": "Multiplateforme",
+	"explore.crossPlatformDesc": "Cette app fonctionne sur iOS, Android et le web à partir d'une seule base de code avec React Native et Expo.",
+	"explore.theme": "Mode clair et sombre",
+	"explore.themeDesc": "L'app s'adapte automatiquement au thème du système. Les couleurs sont définies dans src/constants/theme.ts.",
+	"dream.title": "Dream Mode",
+	"dream.empty": "Décrivez ce que vous voulez changer.\nL'app se modifiera en temps réel.",
+	"dream.placeholder": "Décrivez un changement...",
+	"dream.send": "Envoyer",
+	"dream.keep": "Garder",
+	"dream.discard": "Supprimer",
+};
+
+const es: Translations = {
+	"nav.home": "Inicio",
+	"nav.explore": "Explorar",
+	"nav.dream": "Dream",
+	"home.title": "Bienvenido",
+	"home.getStarted": "Comenzar",
+	"home.getStartedDesc": "Edita app/(tabs)/index.tsx para empezar a construir tu app.",
+	"explore.title": "Explorar",
+	"explore.routing": "Enrutamiento basado en archivos",
+	"explore.routingDesc": "Las pantallas están en src/app/. Cada archivo se convierte automáticamente en una ruta a través de Expo Router.",
+	"explore.crossPlatform": "Multiplataforma",
+	"explore.crossPlatformDesc": "Esta app funciona en iOS, Android y la web desde una sola base de código con React Native y Expo.",
+	"explore.theme": "Modo claro y oscuro",
+	"explore.themeDesc": "La app se adapta automáticamente al esquema de colores del sistema. Los colores se definen en src/constants/theme.ts.",
+	"dream.title": "Dream Mode",
+	"dream.empty": "Describe lo que quieres cambiar.\nLa app se modificará en tiempo real.",
+	"dream.placeholder": "Describe un cambio...",
+	"dream.send": "Enviar",
+	"dream.keep": "Mantener",
+	"dream.discard": "Descartar",
+};
+
+const it: Translations = {
+	"nav.home": "Home",
+	"nav.explore": "Esplora",
+	"nav.dream": "Dream",
+	"home.title": "Benvenuto",
+	"home.getStarted": "Inizia",
+	"home.getStartedDesc": "Modifica app/(tabs)/index.tsx per iniziare a costruire la tua app.",
+	"explore.title": "Esplora",
+	"explore.routing": "Routing basato su file",
+	"explore.routingDesc": "Le schermate si trovano in src/app/. Ogni file diventa automaticamente una route tramite Expo Router.",
+	"explore.crossPlatform": "Multipiattaforma",
+	"explore.crossPlatformDesc": "Questa app funziona su iOS, Android e web da un'unica base di codice con React Native ed Expo.",
+	"explore.theme": "Modalità chiara e scura",
+	"explore.themeDesc": "L'app si adatta automaticamente allo schema di colori del sistema. I colori sono definiti in src/constants/theme.ts.",
+	"dream.title": "Dream Mode",
+	"dream.empty": "Descrivi cosa vuoi cambiare.\nL'app si modificherà in tempo reale.",
+	"dream.placeholder": "Descrivi una modifica...",
+	"dream.send": "Invia",
+	"dream.keep": "Mantieni",
+	"dream.discard": "Scarta",
+};
+
+const pt: Translations = {
+	"nav.home": "Início",
+	"nav.explore": "Explorar",
+	"nav.dream": "Dream",
+	"home.title": "Bem-vindo",
+	"home.getStarted": "Começar",
+	"home.getStartedDesc": "Edite app/(tabs)/index.tsx para começar a construir sua app.",
+	"explore.title": "Explorar",
+	"explore.routing": "Roteamento baseado em arquivos",
+	"explore.routingDesc": "As telas ficam em src/app/. Cada arquivo se torna automaticamente uma rota via Expo Router.",
+	"explore.crossPlatform": "Multiplataforma",
+	"explore.crossPlatformDesc": "Este app funciona no iOS, Android e na web a partir de uma única base de código com React Native e Expo.",
+	"explore.theme": "Modo claro e escuro",
+	"explore.themeDesc": "O app se adapta automaticamente ao esquema de cores do sistema. As cores são definidas em src/constants/theme.ts.",
+	"dream.title": "Dream Mode",
+	"dream.empty": "Descreva o que você quer mudar.\nO app se modificará em tempo real.",
+	"dream.placeholder": "Descreva uma mudança...",
+	"dream.send": "Enviar",
+	"dream.keep": "Manter",
+	"dream.discard": "Descartar",
+};
+
+const ja: Translations = {
+	"nav.home": "ホーム",
+	"nav.explore": "探索",
+	"nav.dream": "Dream",
+	"home.title": "ようこそ",
+	"home.getStarted": "はじめる",
+	"home.getStartedDesc": "app/(tabs)/index.tsxを編集してアプリの構築を始めましょう。",
+	"explore.title": "探索",
+	"explore.routing": "ファイルベースルーティング",
+	"explore.routingDesc": "画面はsrc/app/にあります。各ファイルはExpo Routerで自動的にルートになります。",
+	"explore.crossPlatform": "クロスプラットフォーム",
+	"explore.crossPlatformDesc": "このアプリはReact NativeとExpoで、iOS、Android、Webで単一のコードベースから動作します。",
+	"explore.theme": "ライト・ダークモード",
+	"explore.themeDesc": "アプリはシステムの配色に自動的に適応します。色はsrc/constants/theme.tsで定義されています。",
+	"dream.title": "Dream Mode",
+	"dream.empty": "変更したい内容を説明してください。\nアプリがリアルタイムで更新されます。",
+	"dream.placeholder": "変更を説明...",
+	"dream.send": "送信",
+	"dream.keep": "保持",
+	"dream.discard": "破棄",
+};
+
+const zh: Translations = {
+	"nav.home": "首页",
+	"nav.explore": "探索",
+	"nav.dream": "Dream",
+	"home.title": "欢迎",
+	"home.getStarted": "开始",
+	"home.getStartedDesc": "编辑 app/(tabs)/index.tsx 开始构建你的应用。",
+	"explore.title": "探索",
+	"explore.routing": "基于文件的路由",
+	"explore.routingDesc": "页面位于 src/app/。每个文件通过 Expo Router 自动成为一个路由。",
+	"explore.crossPlatform": "跨平台",
+	"explore.crossPlatformDesc": "此应用使用 React Native 和 Expo，从单一代码库在 iOS、Android 和 Web 上运行。",
+	"explore.theme": "浅色和深色模式",
+	"explore.themeDesc": "应用自动适应系统配色方案。颜色定义在 src/constants/theme.ts 中。",
+	"dream.title": "Dream Mode",
+	"dream.empty": "描述你想要的更改。\n应用将实时自我修改。",
+	"dream.placeholder": "描述一个更改...",
+	"dream.send": "发送",
+	"dream.keep": "保留",
+	"dream.discard": "丢弃",
+};
+
+const ko: Translations = {
+	"nav.home": "홈",
+	"nav.explore": "탐색",
+	"nav.dream": "Dream",
+	"home.title": "환영합니다",
+	"home.getStarted": "시작하기",
+	"home.getStartedDesc": "app/(tabs)/index.tsx를 편집하여 앱 구축을 시작하세요.",
+	"explore.title": "탐색",
+	"explore.routing": "파일 기반 라우팅",
+	"explore.routingDesc": "화면은 src/app/에 있습니다. 각 파일은 Expo Router를 통해 자동으로 라우트가 됩니다.",
+	"explore.crossPlatform": "크로스 플랫폼",
+	"explore.crossPlatformDesc": "이 앱은 React Native와 Expo를 사용하여 단일 코드베이스로 iOS, Android, 웹에서 실행됩니다.",
+	"explore.theme": "라이트 및 다크 모드",
+	"explore.themeDesc": "앱은 시스템 색상 구성표에 자동으로 적응합니다. 색상은 src/constants/theme.ts에 정의되어 있습니다.",
+	"dream.title": "Dream Mode",
+	"dream.empty": "변경하고 싶은 내용을 설명하세요.\n앱이 실시간으로 수정됩니다.",
+	"dream.placeholder": "변경 사항을 설명...",
+	"dream.send": "전송",
+	"dream.keep": "유지",
+	"dream.discard": "삭제",
+};
+
+const translations: Record<string, Translations> = { en, de, fr, es, it, pt, ja, zh, ko };
