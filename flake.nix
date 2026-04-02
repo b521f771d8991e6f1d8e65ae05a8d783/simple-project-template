@@ -34,6 +34,16 @@
       #   1. Explicit [[bin]] entries in Cargo.toml
       #   2. src-rust/main.rs  (uses the package name)
       #   3. src-rust/bin/*.rs  and  src-rust/bin/*/main.rs
+      # Parse .env for the canonical project name (single source of truth).
+      envFile = builtins.readFile ./.env;
+      envVars = builtins.listToAttrs (
+        builtins.concatMap (line:
+          let m = builtins.match "([A-Za-z_][A-Za-z0-9_]*)=(.*)" line;
+          in if m == null then [ ] else [ { name = builtins.elemAt m 0; value = builtins.elemAt m 1; } ]
+        ) (lib.splitString "\n" envFile)
+      );
+      projectName = envVars.PROJECT_NAME;
+
       cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
       rustBinNames =
         let
@@ -146,7 +156,7 @@
         #   $out/worker/worker.js — esbuild CF Worker bundle
         #   $out/worker/assets/ — Expo static web export
         expoApp = pkgs.buildNpmPackage {
-          pname = "expo-app";
+          pname = projectName;
           version = "0.0.0";
           inherit src;
           npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
@@ -188,7 +198,7 @@
         #   result/worker.js      ← main
         #   result/assets/        ← assets.directory
         cloudflare-worker = pkgs.buildNpmPackage {
-          pname = "cloudflare-worker";
+          pname = "${projectName}-cloudflare-worker";
           version = "0.0.0";
           inherit src;
           npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
@@ -258,7 +268,7 @@
 
         dockerImage = lib.optionalAttrs pkgs.stdenv.isLinux (
           pkgs.dockerTools.buildLayeredImage {
-            name = "web-app";
+            name = projectName;
             contents = expoApp.runtimeDeps ++ [
               pkgs.busybox
               pkgs.s6

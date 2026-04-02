@@ -104,11 +104,12 @@ jobs:
      if: matrix.os == 'ubuntu-24.04' && github.event_name == 'push'
      id: worker
      run: |
+      source .env
       if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-        echo "name=web-app" >> $GITHUB_OUTPUT
+        echo "name=${PROJECT_NAME}" >> $GITHUB_OUTPUT
       else
         BRANCH=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
-        echo "name=web-app-${BRANCH}" >> $GITHUB_OUTPUT
+        echo "name=${PROJECT_NAME}-${BRANCH}" >> $GITHUB_OUTPUT
       fi
 
    - name: Deploy to Cloudflare Workers
@@ -126,9 +127,11 @@ jobs:
   if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
   runs-on: ubuntu-latest
   steps:
+   - uses: actions/checkout@v6.0.2
    - name: Delete preview worker
      run: |
+      source .env
       BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
       curl -s -X DELETE \
-        "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/web-app-${BRANCH}" \
+        "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/${PROJECT_NAME}-${BRANCH}" \
         -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}"

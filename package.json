@@ -1,7 +1,5 @@
 {
-  "name": "test",
   "main": "expo-router/entry",
-  "version": "1.0.0",
   "scripts": {
     "dev:android": "expo start --android",
     "dev:ios": "expo start --ios",
@@ -20,6 +18,7 @@
     "lint": "expo lint && cargo check"
   },
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.59.1",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
