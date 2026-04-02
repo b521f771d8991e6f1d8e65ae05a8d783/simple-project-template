@@ -1,6 +1,6 @@
 # simple-project-template
 
-A cross-platform application template built with Expo (React Native), Rust/WASM, and Nix. Deploys to Cloudflare Workers, Docker, or runs natively on iOS/Android.
+A cross-platform application template built with Expo (React Native), TypeScript, and Nix. Deploys to Cloudflare Workers, Docker, or runs natively on iOS/Android.
 
 Application based on this template have three modes: **develop → dream → build**.
 
@@ -13,14 +13,14 @@ Application based on this template have three modes: **develop → dream → bui
 ## Quick Start
 
 ```bash
-nix develop          # enter dev shell (Rust, Node, wasm-pack, etc.)
+nix develop          # enter dev shell (Node, git, etc.)
 npm install          # install JS dependencies
 npm run develop      # start developing
 ```
 
 ## Develop
 
-Local development with Metro hot-reload. Edit files in VS Code, changes appear instantly. Bacon watches Rust source in the background and rebuilds WASM on changes.
+Local development with Metro hot-reload. Edit files in VS Code, changes appear instantly.
 
 ```bash
 npm run develop
@@ -77,11 +77,9 @@ src/
   components/     # Reusable React Native components
   constants/      # Theme colors, config
   hooks/          # Custom React hooks
-  lib/            # Platform libraries (Rust interop, version)
+  lib/            # Shared libraries (version, etc.)
   redux/          # Redux store and slices
   server/         # Server-side code (DB, API routes)
-  wasm/           # Generated WASM bindings (gitignored)
-src-rust/         # Rust source (lib.rs + bin/)
 scripts/          # Build and release scripts
 ```
 
@@ -89,8 +87,8 @@ scripts/          # Build and release scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run develop` | Debug WASM + bacon watch + Metro dev server |
-| `npm run dream` | Debug build + Node server with Dream Mode |
+| `npm run develop` | Metro dev server |
+| `npm run dream` | Metro dev server with Dream Mode enabled |
 | `npm run build` | Release build for Node.js / Docker |
 | `npm run build:worker` | Release build for Cloudflare Workers |
 | `npm run version` | Print current version (from git tag or commit hash) |

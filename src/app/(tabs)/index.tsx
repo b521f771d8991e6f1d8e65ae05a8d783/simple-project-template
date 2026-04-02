@@ -5,7 +5,6 @@ import { ReadingDino } from "@/components/reading-dino";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { get_1 } from "@/lib/rust";
 
 export default function HomeScreen() {
 	const colorScheme = useColorScheme();
@@ -19,18 +18,6 @@ export default function HomeScreen() {
 				>
 					<ThemedText type="title">Welcome</ThemedText>
 					<ReadingDino dark={colorScheme === "dark"} />
-
-					<ThemedView
-						className="rounded-2xl p-4 gap-2 w-full"
-						lightColor="#f9fafb"
-						darkColor="#111"
-					>
-						<ThemedText type="subtitle">Rust + WASM</ThemedText>
-						<ThemedText>
-							Rust says:{" "}
-							<ThemedText type="semibold">{get_1()}</ThemedText>
-						</ThemedText>
-					</ThemedView>
 
 					<ThemedView
 						className="rounded-2xl p-4 gap-2 w-full"

@@ -31,9 +31,6 @@ AGENTS.md
 # Build scripts and tooling
 scripts/
 
-# Rust source (modify via Cargo, not Dream Mode)
-src-rust/
-
 # Server infrastructure (Dream Mode should not modify its own endpoints)
 src/server.ts
 src/worker.ts
@@ -44,4 +41,3 @@ src/app/api/
 src/app/(tabs)/_layout.tsx
 src/app/_layout.tsx
 src/lib/version.ts
-src/lib/rust.tsx

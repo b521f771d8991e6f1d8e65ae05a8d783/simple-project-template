@@ -50,20 +50,6 @@ export default function ExploreScreen() {
 						lightColor="#f9fafb"
 						darkColor="#111"
 					>
-						<ThemedText type="subtitle">Rust interop</ThemedText>
-						<ThemedText>
-							Business logic is written in Rust and compiled to
-							WASM for web, or linked natively on mobile. See{" "}
-							<ThemedText type="semibold">src/lib/rust.ts</ThemedText>{" "}
-							for the bridge.
-						</ThemedText>
-					</ThemedView>
-
-					<ThemedView
-						className="rounded-2xl p-4 gap-2 w-full"
-						lightColor="#f9fafb"
-						darkColor="#111"
-					>
 						<ThemedText type="subtitle">Light and dark mode</ThemedText>
 						<ThemedText>
 							The app adapts to the system color scheme
