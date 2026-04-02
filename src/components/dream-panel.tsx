@@ -40,15 +40,15 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const [sessionId, setSessionId] = useState<string | null>(null);
 	const scrollRef = useRef<ScrollView>(null);
 
-	// Load persisted history on mount
+	// Reload persisted history every time the panel opens (survives hot reloads)
 	useEffect(() => {
+		if (!visible) return;
 		loadMessages().then((saved) => {
 			setMessages(saved);
-			// Restore session ID from the last assistant message
 			const lastWithSession = [...saved].reverse().find((m) => m.sessionId);
 			if (lastWithSession?.sessionId) setSessionId(lastWithSession.sessionId);
 		}).catch(() => {});
-	}, []);
+	}, [visible]);
 
 	const scrollToEnd = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
