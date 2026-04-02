@@ -2,12 +2,11 @@
 
 A cross-platform application template built with Expo (React Native), TypeScript, and Nix. Deploys to Cloudflare Workers, Docker, or runs natively on iOS/Android.
 
-Application based on this template have three modes: **develop → dream → build**.
+Application based on this template have two modes: **develop** and **build**.
 
 | Mode | Command | Who | What |
 |------|---------|-----|------|
-| **Develop** | `npm run develop` | Developers | VS Code + Metro dev server. Debug builds. Edit code directly. |
-| **Dream** | `npm run dream` | Privileged users | Users modify the running app via Claude Code in the browser. |
+| **Develop** | `npm run develop` | Developers | VS Code + Metro dev server with Dream Mode (Claude Code AI). |
 | **Build** | `npm run build` | CI / release | Production release builds. Immutable output for deployment. |
 
 ## Quick Start
@@ -20,37 +19,17 @@ npm run develop      # start developing
 
 ## Develop
 
-Local development with Metro hot-reload. Edit files in VS Code, changes appear instantly.
+Local development with Metro hot-reload. Edit files in VS Code, changes appear instantly. Includes **Dream Mode** — click the Dream button in the nav bar to modify the app via Claude Code AI.
 
 ```bash
 npm run develop
 ```
 
-## Dream
-
-Hand this mode to privileged users who can adapt the application on their own. A **Dream** button appears in the nav bar — they describe changes in natural language and Claude Code modifies the app in real-time.
-
-```bash
-ANTHROPIC_API_KEY=sk-ant-... npm run dream
-```
-
-How it works:
-
-1. User clicks Dream in the nav bar and types a prompt
-2. The server runs `npx claude --print --dangerously-skip-permissions` in the project directory
-3. Claude Code reads files, makes edits, respects `.do-not-edit`
-4. The app reloads with the changes
-
-### Safety
-
-- Claude Code natively respects `AGENTS.md` and `.do-not-edit` conventions
-- Protected files are listed in `.do-not-edit`
-- The server enforces `APP_MODE` — Dream API is only available when `APP_MODE=dream`
-- All Dream changes are local and uncommitted — use `git diff` to review, `git checkout .` to revert
+To use Dream Mode, set `ANTHROPIC_API_KEY` in `.env` or log in via `claude login`. Dream Mode respects `AGENTS.md` and `.do-not-edit` — all changes are committed via git and can be kept or discarded from the UI.
 
 ## Build
 
-Production release builds with `NODE_ENV=production`, release Rust (WASM), and minified JS bundles.
+Production release builds with `NODE_ENV=production` and minified JS bundles. Dream Mode is disabled.
 
 **Node.js / Docker:**
 ```bash
@@ -87,8 +66,7 @@ scripts/          # Build and release scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run develop` | Metro dev server |
-| `npm run dream` | Metro dev server with Dream Mode enabled |
+| `npm run develop` | Metro dev server with Dream Mode |
 | `npm run build` | Release build for Node.js / Docker |
 | `npm run build:worker` | Release build for Cloudflare Workers |
 | `npm run version` | Print current version (from git tag or commit hash) |

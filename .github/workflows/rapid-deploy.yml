@@ -7,7 +7,7 @@
 # on beta/stable, use the Nix Flake workflow instead.
 #
 # Jobs:
-#   rapid-deploy    — 🦀 Rust WASM + 📱 Expo web + ☁️ Cloudflare Workers deploy
+#   rapid-deploy    — 📱 Expo web + ☁️ Cloudflare Workers deploy
 #   cleanup-preview — 🧹 deletes preview workers when a branch is deleted
 #
 # Secrets required:
@@ -37,30 +37,23 @@ jobs:
         uses: actions/cache@main
         with:
           path: |
-            ~/.cargo
-            target
             node_modules
             /tmp/metro-cache
             /tmp/metro-file-map-*
-          key: build-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'package-lock.json') }}
+          key: build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: build-${{ runner.os }}-
 
       - name: Install tools & dependencies 🔧
-        # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md most stuff is already installed :)
         run: |
           curl -fsSL https://bun.sh/install | bash
           export PATH="$HOME/.bun/bin:$PATH"
-          rustup target add wasm32-unknown-unknown
-          if ! command -v wasm-bindgen >/dev/null 2>&1; then
-            curl -sL https://github.com/cargo-bins/cargo-binstall/releases/latest/download/cargo-binstall-x86_64-unknown-linux-musl.tgz | tar xz -C /usr/local/bin
-            cargo binstall wasm-bindgen-cli@0.2.108 --no-confirm
-          fi
           bun install --frozen-lockfile --ignore-scripts
           echo "$HOME/.bun/bin" >> $GITHUB_PATH
 
       # ── Build & Deploy 🏗️ ─────────────────────────────────────
       - name: Build & deploy 🏗️🚀
         run: |
+          source .env
           bun run build:cloudflare-worker:dev
           if [ "${{ github.event_name }}" = "push" ]; then
             mkdir -p result-cloudflare/assets
@@ -68,9 +61,9 @@ jobs:
             mv result-cloudflare/assets/worker.js result-cloudflare/worker.js
             rm -f result-cloudflare/assets/main.js
             if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-              WORKER_NAME="web-app"
+              WORKER_NAME="${PROJECT_NAME}"
             else
-              WORKER_NAME="web-app-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
+              WORKER_NAME="${PROJECT_NAME}-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
             fi
             bunx wrangler deploy result-cloudflare/worker.js --name "$WORKER_NAME" --no-bundle
           fi
@@ -91,9 +84,11 @@ jobs:
     if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@main
       - name: Delete preview worker 🧹
         run: |
+          source .env
           BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
           curl -s -X DELETE \
-            "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/web-app-${BRANCH}" \
+            "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/${PROJECT_NAME}-${BRANCH}" \
             -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}"

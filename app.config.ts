@@ -1,10 +1,21 @@
 import { execSync } from "child_process";
+import { existsSync, readFileSync } from "fs";
 import { config } from "@dotenvx/dotenvx";
 import { ExpoConfig, ConfigContext } from "expo/config";
 
 config();
 const name = process.env.PROJECT_NAME ?? "simple-project-template";
-const version = execSync("npx tsx scripts/version.ts", { encoding: "utf-8" }).trim();
+
+// Resolve version: VERSION file (Nix sandbox), or git describe (local dev)
+let version = "dev";
+try {
+  if (existsSync("VERSION")) {
+    version = readFileSync("VERSION", "utf-8").trim();
+  } else {
+    version = execSync("git describe --tags --exact-match HEAD 2>/dev/null || git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+    try { execSync("git diff --quiet && git diff --cached --quiet", { stdio: "ignore" }); } catch { version += "-dirty"; }
+  }
+} catch { /* keep "dev" */ }
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,

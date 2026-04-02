@@ -7,7 +7,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 interface Message {
 	role: "user" | "assistant";
 	content: string;
-	branch?: string;
 	hasChanges?: boolean;
 }
 
@@ -85,13 +84,13 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		}
 	};
 
-	const handleBranchAction = async (action: "keep" | "discard", branch: string, msgIndex: number) => {
+	const handleAction = async (action: "keep" | "discard", msgIndex: number) => {
 		setLoading(true);
 		try {
-			const data = await dreamFetch({ action, branch });
+			const data = await dreamFetch({ action });
 			setMessages((prev) =>
 				prev.map((m, i) =>
-					i === msgIndex ? { ...m, content: `${m.content}\n\n${data.summary ?? data.error}`, branch: undefined } : m,
+					i === msgIndex ? { ...m, content: `${m.content}\n\n${data.summary ?? data.error}`, hasChanges: false } : m,
 				),
 			);
 		} catch (err) {
@@ -139,24 +138,19 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 								<Text style={{ color: msg.role === "user" ? "#fff" : c.text, fontSize: 13 }}>
 									{msg.content}
 								</Text>
-								{msg.branch && (
-									<Text style={{ fontSize: 10, color: c.textSecondary, marginTop: 4 }}>
-										branch: {msg.branch}
-									</Text>
-								)}
 							</View>
 							{/* Keep / Discard buttons */}
-							{msg.branch && msg.hasChanges && (
+							{msg.hasChanges && (
 								<View style={styles.branchActions}>
 									<Pressable
-										onPress={() => handleBranchAction("keep", msg.branch!, i)}
+										onPress={() => handleAction("keep", i)}
 										disabled={loading}
 										style={[styles.actionBtn, { backgroundColor: "#22c55e" }]}
 									>
 										<Text style={styles.actionBtnText}>Keep</Text>
 									</Pressable>
 									<Pressable
-										onPress={() => handleBranchAction("discard", msg.branch!, i)}
+										onPress={() => handleAction("discard", i)}
 										disabled={loading}
 										style={[styles.actionBtn, { backgroundColor: "#ef4444" }]}
 									>
