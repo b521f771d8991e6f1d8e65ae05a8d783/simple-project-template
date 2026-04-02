@@ -10,7 +10,7 @@
     "build:node:dev": "npm run compile:web && npm run compile:server:dev",
     "build:cloudflare-worker": "EXPO_NO_TELEMETRY=1 npm run compile:web && npm run compile:worker",
     "build:cloudflare-worker:dev": "EXPO_NO_TELEMETRY=1 npm run compile:web && npm run compile:worker:dev",
-    "develop": "APP_MODE=develop expo start --web",
+    "dev": "APP_MODE=develop expo start --web",
     "build": "NODE_ENV=production npm run build:node",
     "build:worker": "NODE_ENV=production npm run build:cloudflare-worker",
     "lint": "expo lint",

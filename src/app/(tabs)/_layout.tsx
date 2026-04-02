@@ -4,12 +4,20 @@ import { View, Pressable, Text, StyleSheet, Platform, useColorScheme as useRNCol
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 
 import { DreamPanel } from "@/components/dream-panel";
+import { LanguageSelector } from "@/components/language-selector";
 import { Logo } from "@/components/logo";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useTranslation } from "@/lib/i18n";
 import { APP_VERSION } from "@/lib/version";
 import { Colors } from "@/constants/theme";
 
 type AppMode = "develop" | "dream" | "freeze";
+
+// Map route names to i18n keys
+const routeLabels: Record<string, string> = {
+	index: "nav.home",
+	explore: "nav.explore",
+};
 
 function useAppMode(): AppMode {
 	const [mode, setMode] = useState<AppMode>("freeze");
@@ -30,6 +38,7 @@ function NavBar({
 }: BottomTabBarProps & { appMode: AppMode; onDreamPress: () => void; dreamOpen: boolean }) {
 	const colorScheme = useRNColorScheme() ?? "light";
 	const c = Colors[colorScheme];
+	const t = useTranslation();
 
 	return (
 		<View style={[styles.navBar, { backgroundColor: c.background, borderBottomColor: c.border }]}>
@@ -41,6 +50,8 @@ function NavBar({
 					const { options } = descriptors[route.key];
 					const isFocused = state.index === index;
 					const color = isFocused ? c.accent : c.icon;
+					const i18nKey = routeLabels[route.name];
+					const label = i18nKey ? t(i18nKey as any) : options.title ?? route.name;
 
 					return (
 						<Pressable
@@ -51,7 +62,7 @@ function NavBar({
 							style={styles.tab}
 						>
 							{options.tabBarIcon?.({ color, focused: isFocused, size: 20 })}
-							<Text style={[styles.label, { color }]}>{options.title ?? route.name}</Text>
+							<Text style={[styles.label, { color }]}>{label}</Text>
 						</Pressable>
 					);
 				})}
@@ -59,10 +70,11 @@ function NavBar({
 			<View style={styles.right}>
 				<Text style={[styles.meta, { color: c.textSecondary }]}>v{APP_VERSION}</Text>
 			</View>
+			<LanguageSelector />
 			{(appMode === "dream" || appMode === "develop") && (
 				<Pressable onPress={onDreamPress} style={styles.tab}>
 					<IconSymbol size={20} name="sparkles" color={dreamOpen ? c.accent : c.icon} />
-					<Text style={[styles.label, { color: dreamOpen ? c.accent : c.icon }]}>Dream</Text>
+					<Text style={[styles.label, { color: dreamOpen ? c.accent : c.icon }]}>{t("nav.dream")}</Text>
 				</Pressable>
 			)}
 		</View>

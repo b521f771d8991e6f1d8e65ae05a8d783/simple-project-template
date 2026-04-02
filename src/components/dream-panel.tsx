@@ -3,6 +3,7 @@ import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndic
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/lib/i18n";
 
 interface Message {
 	role: "user" | "assistant";
@@ -30,6 +31,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const isDark = colorScheme === "dark";
 	const c = Colors[colorScheme];
+	const t = useTranslation();
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState("");
 	const [loading, setLoading] = useState(false);
@@ -108,10 +110,10 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		<Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
 			<Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-			<View style={[styles.panel, { backgroundColor: c.background, borderColor: c.border }]}>
+			<Pressable style={[styles.panel, { backgroundColor: c.background, borderColor: c.border }]} onPress={(e) => e.stopPropagation()}>
 				{/* Header */}
 				<View style={[styles.header, { borderBottomColor: c.border }]}>
-					<Text style={[styles.headerTitle, { color: c.text }]}>Dream Mode</Text>
+					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
 					<Pressable onPress={onClose} hitSlop={8}>
 						<Text style={{ color: c.textSecondary, fontSize: 18 }}>✕</Text>
 					</Pressable>
@@ -121,7 +123,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				<ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
 					{messages.length === 0 && (
 						<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
-							Describe what you want to change.{"\n"}Changes are made on a branch — keep or discard after.
+							{t("dream.empty")}
 						</Text>
 					)}
 
@@ -147,14 +149,14 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 										disabled={loading}
 										style={[styles.actionBtn, { backgroundColor: "#22c55e" }]}
 									>
-										<Text style={styles.actionBtnText}>Keep</Text>
+										<Text style={styles.actionBtnText}>{t("dream.keep")}</Text>
 									</Pressable>
 									<Pressable
 										onPress={() => handleAction("discard", i)}
 										disabled={loading}
 										style={[styles.actionBtn, { backgroundColor: "#ef4444" }]}
 									>
-										<Text style={styles.actionBtnText}>Discard</Text>
+										<Text style={styles.actionBtnText}>{t("dream.discard")}</Text>
 									</Pressable>
 								</View>
 							)}
@@ -173,7 +175,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					<TextInput
 						value={input}
 						onChangeText={setInput}
-						placeholder="Describe a change..."
+						placeholder={t("dream.placeholder")}
 						placeholderTextColor={c.textSecondary}
 						style={[styles.input, { color: c.text, backgroundColor: isDark ? "#242424" : "#f5f5f5" }]}
 						multiline
@@ -191,10 +193,10 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 						disabled={loading || !input.trim()}
 						style={[styles.sendBtn, { backgroundColor: c.accent, opacity: loading || !input.trim() ? 0.4 : 1 }]}
 					>
-						<Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>Send</Text>
+						<Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>{t("dream.send")}</Text>
 					</Pressable>
 				</View>
-			</View>
+			</Pressable>
 		</Modal>
 	);
 }

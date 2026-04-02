@@ -6,7 +6,7 @@ Application based on this template have two modes: **develop** and **build**.
 
 | Mode | Command | Who | What |
 |------|---------|-----|------|
-| **Develop** | `npm run develop` | Developers | VS Code + Metro dev server with Dream Mode (Claude Code AI). |
+| **Develop** | `npm run dev` | Developers | VS Code + Metro dev server with Dream Mode (Claude Code AI). |
 | **Build** | `npm run build` | CI / release | Production release builds. Immutable output for deployment. |
 
 ## Quick Start
@@ -14,7 +14,7 @@ Application based on this template have two modes: **develop** and **build**.
 ```bash
 nix develop          # enter dev shell (Node, git, etc.)
 npm install          # install JS dependencies
-npm run develop      # start developing
+npm run dev      # start developing
 ```
 
 ## Develop
@@ -22,7 +22,7 @@ npm run develop      # start developing
 Local development with Metro hot-reload. Edit files in VS Code, changes appear instantly. Includes **Dream Mode** — click the Dream button in the nav bar to modify the app via Claude Code AI.
 
 ```bash
-npm run develop
+npm run dev
 ```
 
 To use Dream Mode, set `ANTHROPIC_API_KEY` in `.env` or log in via `claude login`. Dream Mode respects `AGENTS.md` and `.do-not-edit` — all changes are committed via git and can be kept or discarded from the UI.
@@ -66,7 +66,7 @@ scripts/          # Build and release scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run develop` | Metro dev server with Dream Mode |
+| `npm run dev` | Metro dev server with Dream Mode |
 | `npm run build` | Release build for Node.js / Docker |
 | `npm run build:worker` | Release build for Cloudflare Workers |
 | `npm run version` | Print current version (from git tag or commit hash) |

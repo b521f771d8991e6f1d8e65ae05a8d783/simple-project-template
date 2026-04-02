@@ -1,4 +1,5 @@
 import { apiSlice } from "@/redux/state/apiSlice";
+import { languageSlice } from "@/redux/state/languageSlice";
 import { Action, configureStore, isPlain, ThunkAction } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -18,6 +19,7 @@ function isSerializableWithToJsonSupport(x: any): boolean {
 export const store = configureStore({
 	reducer: {
 		[apiSlice.reducerPath]: apiSlice.reducer,
+		language: languageSlice.reducer,
 	},
 	middleware: (getDefaultMiddleware) =>
 		getDefaultMiddleware({

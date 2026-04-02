@@ -5,9 +5,11 @@ import { SleepingDino } from "@/components/sleeping-dino";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/lib/i18n";
 
 export default function ExploreScreen() {
 	const colorScheme = useColorScheme();
+	const t = useTranslation();
 
 	return (
 		<ThemedView className="flex-1">
@@ -16,7 +18,7 @@ export default function ExploreScreen() {
 					className="flex-1"
 					contentContainerClassName="px-6 py-8 gap-8 max-w-xl self-center w-full items-center"
 				>
-					<ThemedText type="title">Explore</ThemedText>
+					<ThemedText type="title">{t("explore.title")}</ThemedText>
 					<SleepingDino dark={colorScheme === "dark"} />
 
 					<ThemedView
@@ -24,13 +26,8 @@ export default function ExploreScreen() {
 						lightColor="#f9fafb"
 						darkColor="#111"
 					>
-						<ThemedText type="subtitle">File-based routing</ThemedText>
-						<ThemedText>
-							Screens live in{" "}
-							<ThemedText type="semibold">src/app/</ThemedText>.
-							Each file becomes a route automatically via Expo
-							Router.
-						</ThemedText>
+						<ThemedText type="subtitle">{t("explore.routing")}</ThemedText>
+						<ThemedText>{t("explore.routingDesc")}</ThemedText>
 					</ThemedView>
 
 					<ThemedView
@@ -38,11 +35,8 @@ export default function ExploreScreen() {
 						lightColor="#f9fafb"
 						darkColor="#111"
 					>
-						<ThemedText type="subtitle">Cross-platform</ThemedText>
-						<ThemedText>
-							This app runs on iOS, Android, and the web from a
-							single codebase using React Native and Expo.
-						</ThemedText>
+						<ThemedText type="subtitle">{t("explore.crossPlatform")}</ThemedText>
+						<ThemedText>{t("explore.crossPlatformDesc")}</ThemedText>
 					</ThemedView>
 
 					<ThemedView
@@ -50,15 +44,8 @@ export default function ExploreScreen() {
 						lightColor="#f9fafb"
 						darkColor="#111"
 					>
-						<ThemedText type="subtitle">Light and dark mode</ThemedText>
-						<ThemedText>
-							The app adapts to the system color scheme
-							automatically. Colors are defined in{" "}
-							<ThemedText type="semibold">
-								src/constants/theme.ts
-							</ThemedText>
-							.
-						</ThemedText>
+						<ThemedText type="subtitle">{t("explore.theme")}</ThemedText>
+						<ThemedText>{t("explore.themeDesc")}</ThemedText>
 					</ThemedView>
 				</ScrollView>
 			</SafeAreaView>
