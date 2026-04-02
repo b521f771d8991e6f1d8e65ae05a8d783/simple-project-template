@@ -80,17 +80,26 @@ export async function POST(req: Request): Promise<Response> {
 			: prompt;
 		args.push(fullPrompt);
 
-		const { stdout } = await exec("npx", args, {
+		console.log(`[Dream] Starting Claude Code: "${prompt.slice(0, 80)}"`);
+		const start = Date.now();
+
+		const { stdout, stderr } = await exec("npx", args, {
 			cwd,
 			timeout: 120_000,
 			maxBuffer: 10 * 1024 * 1024,
 			env: { ...process.env },
 		});
 
+		const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+		if (stderr) console.warn(`[Dream] stderr: ${stderr.trim()}`);
+
 		// Parse Claude Code JSON response
 		const result = JSON.parse(stdout);
 		const text = (result.result ?? "").replace(/\n{3,}/g, "\n\n").trim();
 		const returnedSessionId = result.session_id ?? sessionId;
+
+		console.log(`[Dream] Completed in ${elapsed}s (session: ${returnedSessionId})`);
+		if (result.cost) console.log(`[Dream] Cost: $${result.cost.toFixed(4)}`);
 
 		// Commit changes if any
 		const { stdout: status } = await git("status", "--porcelain");

@@ -38,6 +38,24 @@ export default function HomeScreen() {
 						<ThemedText type="subtitle">{t("home.dreamMode")}</ThemedText>
 						<ThemedText>{t("home.dreamModeDesc")}</ThemedText>
 					</ThemedView>
+
+					<ThemedView
+						className="rounded-2xl p-4 gap-2 w-full"
+						lightColor="#f9fafb"
+						darkColor="#111"
+					>
+						<ThemedText type="subtitle">{t("home.editVSCode")}</ThemedText>
+						<ThemedText>{t("home.editVSCodeDesc")}</ThemedText>
+					</ThemedView>
+
+					<ThemedView
+						className="rounded-2xl p-4 gap-2 w-full"
+						lightColor="#f9fafb"
+						darkColor="#111"
+					>
+						<ThemedText type="subtitle">{t("home.release")}</ThemedText>
+						<ThemedText>{t("home.releaseDesc")}</ThemedText>
+					</ThemedView>
 				</ScrollView>
 			</SafeAreaView>
 		</ThemedView>
