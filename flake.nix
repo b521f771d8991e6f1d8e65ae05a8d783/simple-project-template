@@ -44,6 +44,16 @@
       );
       projectName = envVars.PROJECT_NAME;
 
+      # Version: read from VERSION file (written by CI before nix build).
+      # Falls back to flake rev, short rev, or "dev" for local builds.
+      projectVersion =
+        if builtins.pathExists ./VERSION then
+          lib.trim (builtins.readFile ./VERSION)
+        else if self ? rev then
+          self.shortRev
+        else
+          "dev";
+
       cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
       rustBinNames =
         let
@@ -157,7 +167,7 @@
         #   $out/worker/assets/ — Expo static web export
         expoApp = pkgs.buildNpmPackage {
           pname = projectName;
-          version = "0.0.0";
+          version = projectVersion;
           inherit src;
           npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
           npmConfigHook = pkgs.importNpmLock.npmConfigHook;
@@ -167,8 +177,11 @@
             wasm-bindgen-cli
           ];
           env.NODE_ENV = "production";
+          env.APP_VERSION = projectVersion;
           preBuild = ''
             export HOME=$TMPDIR
+            # Write VERSION file so scripts/version.ts can read it in the nix sandbox (no .git)
+            echo "${projectVersion}" > VERSION
             # Use crane's vendored deps config (no network in nix sandbox)
             mkdir -p .cargo
             cp ${cargoVendorDir}/config.toml .cargo/config.toml
@@ -199,7 +212,7 @@
         #   result/assets/        ← assets.directory
         cloudflare-worker = pkgs.buildNpmPackage {
           pname = "${projectName}-cloudflare-worker";
-          version = "0.0.0";
+          version = projectVersion;
           inherit src;
           npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
           npmConfigHook = pkgs.importNpmLock.npmConfigHook;
@@ -208,8 +221,10 @@
             wasm-bindgen-cli
           ];
           env.NODE_ENV = "production";
+          env.APP_VERSION = projectVersion;
           preBuild = ''
             export HOME=$TMPDIR
+            echo "${projectVersion}" > VERSION
             # Use crane's vendored deps config (no network in nix sandbox)
             mkdir -p .cargo
             cp ${cargoVendorDir}/config.toml .cargo/config.toml

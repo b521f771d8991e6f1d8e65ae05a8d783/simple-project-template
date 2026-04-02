@@ -1,14 +1,16 @@
+import { execSync } from "child_process";
 import { config } from "@dotenvx/dotenvx";
 import { ExpoConfig, ConfigContext } from "expo/config";
 
 config();
 const name = process.env.PROJECT_NAME ?? "simple-project-template";
+const version = execSync("npx tsx scripts/version.ts", { encoding: "utf-8" }).trim();
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name,
   slug: name,
-  version: "1.0.0",
+  version,
   orientation: "portrait",
   icon: "./src/assets/images/icon.png",
   scheme: name,

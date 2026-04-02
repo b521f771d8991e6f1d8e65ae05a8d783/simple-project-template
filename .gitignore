@@ -45,5 +45,6 @@ app-example
 
 # for nixpkgs
 /result
+/VERSION
 
 /src/wasm
