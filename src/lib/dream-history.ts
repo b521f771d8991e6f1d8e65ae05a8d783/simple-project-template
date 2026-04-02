@@ -1,4 +1,4 @@
-import * as SQLite from "expo-sqlite";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface DreamMessage {
 	id?: number;
@@ -9,69 +9,46 @@ export interface DreamMessage {
 	createdAt?: string;
 }
 
-let db: SQLite.SQLiteDatabase | null = null;
+const KEY = "dream-chat-history";
 
-async function getDb(): Promise<SQLite.SQLiteDatabase> {
-	if (!db) {
-		db = await SQLite.openDatabaseAsync("dream-history");
-		await db.execAsync(`
-			CREATE TABLE IF NOT EXISTS messages (
-				id INTEGER PRIMARY KEY AUTOINCREMENT,
-				role TEXT NOT NULL,
-				content TEXT NOT NULL,
-				hasChanges INTEGER DEFAULT 0,
-				sessionId TEXT,
-				createdAt TEXT DEFAULT (datetime('now'))
-			);
-		`);
+export async function loadMessages(): Promise<DreamMessage[]> {
+	console.log("[DreamDB] Loading messages...");
+	try {
+		const raw = await AsyncStorage.getItem(KEY);
+		const msgs: DreamMessage[] = raw ? JSON.parse(raw) : [];
+		console.log(`[DreamDB] Loaded ${msgs.length} messages`);
+		return msgs;
+	} catch (err) {
+		console.error("[DreamDB] Failed to load:", err);
+		return [];
 	}
-	return db;
+}
+
+async function persist(msgs: DreamMessage[]): Promise<void> {
+	await AsyncStorage.setItem(KEY, JSON.stringify(msgs));
 }
 
 export async function saveMessage(msg: DreamMessage): Promise<number> {
-	const d = await getDb();
-	const result = await d.runAsync(
-		"INSERT INTO messages (role, content, hasChanges, sessionId) VALUES (?, ?, ?, ?)",
-		msg.role,
-		msg.content,
-		msg.hasChanges ? 1 : 0,
-		msg.sessionId ?? null,
-	);
-	return result.lastInsertRowId;
+	const msgs = await loadMessages();
+	const id = msgs.reduce((max, m) => Math.max(max, m.id ?? 0), 0) + 1;
+	const saved: DreamMessage = { ...msg, id, createdAt: msg.createdAt ?? new Date().toISOString() };
+	msgs.push(saved);
+	await persist(msgs);
+	console.log(`[DreamDB] Saved ${msg.role} id=${id}`);
+	return id;
 }
 
 export async function updateMessage(id: number, updates: Partial<DreamMessage>): Promise<void> {
-	const d = await getDb();
-	if (updates.content !== undefined) {
-		await d.runAsync("UPDATE messages SET content = ? WHERE id = ?", updates.content, id);
+	const msgs = await loadMessages();
+	const idx = msgs.findIndex((m) => m.id === id);
+	if (idx !== -1) {
+		msgs[idx] = { ...msgs[idx], ...updates };
+		await persist(msgs);
+		console.log(`[DreamDB] Updated id=${id}`);
 	}
-	if (updates.hasChanges !== undefined) {
-		await d.runAsync("UPDATE messages SET hasChanges = ? WHERE id = ?", updates.hasChanges ? 1 : 0, id);
-	}
-}
-
-export async function loadMessages(): Promise<DreamMessage[]> {
-	const d = await getDb();
-	const rows = await d.getAllAsync<{
-		id: number;
-		role: string;
-		content: string;
-		hasChanges: number;
-		sessionId: string | null;
-		createdAt: string;
-	}>("SELECT * FROM messages ORDER BY id ASC");
-
-	return rows.map((r) => ({
-		id: r.id,
-		role: r.role as "user" | "assistant",
-		content: r.content,
-		hasChanges: r.hasChanges === 1,
-		sessionId: r.sessionId ?? undefined,
-		createdAt: r.createdAt,
-	}));
 }
 
 export async function clearHistory(): Promise<void> {
-	const d = await getDb();
-	await d.runAsync("DELETE FROM messages");
+	await AsyncStorage.removeItem(KEY);
+	console.log("[DreamDB] History cleared");
 }

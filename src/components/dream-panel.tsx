@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal } from "react-native";
+import Markdown from "react-native-markdown-display";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -36,16 +37,24 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 
 	// Reload history from DB every time the panel opens (survives hot reloads)
 	const reload = useCallback(async () => {
+		console.log("[Dream] Reloading chat history...");
 		try {
 			const saved = await loadMessages();
+			console.log(`[Dream] Loaded ${saved.length} messages from DB`);
 			setMessages(saved);
 			const lastWithSession = [...saved].reverse().find((m) => m.sessionId);
-			if (lastWithSession?.sessionId) setSessionId(lastWithSession.sessionId);
-		} catch { /* empty */ }
+			if (lastWithSession?.sessionId) {
+				console.log(`[Dream] Restored session: ${lastWithSession.sessionId}`);
+				setSessionId(lastWithSession.sessionId);
+			}
+		} catch (err) {
+			console.error("[Dream] Failed to load history:", err);
+		}
 		setInitialized(true);
 	}, []);
 
 	useEffect(() => {
+		console.log(`[Dream] Panel visible=${visible}`);
 		if (visible) reload();
 	}, [visible, reload]);
 
@@ -63,8 +72,9 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		const prompt = input.trim();
 		if (!prompt || loading) return;
 
+		console.log(`[Dream] Sending: "${prompt.slice(0, 80)}"`);
 		const userMsg: DreamMessage = { role: "user", content: prompt };
-		const userId = await saveMessage(userMsg).catch(() => undefined);
+		const userId = await saveMessage(userMsg).catch((e) => { console.error("[Dream] Save user msg failed:", e); return undefined; });
 		setMessages((prev) => [...prev, { ...userMsg, id: userId }]);
 		setInput("");
 		setLoading(true);
@@ -79,7 +89,9 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				} catch { /* optional */ }
 			}
 
+			console.log("[Dream] Calling API...");
 			const data = await dreamFetch({ prompt, sessionId, screenshot });
+			console.log("[Dream] API response:", JSON.stringify(data).slice(0, 200));
 			if (data.sessionId) setSessionId(data.sessionId);
 
 			if (data.error) {
@@ -150,9 +162,18 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 										: { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" },
 								]}
 							>
-								<Text style={{ color: msg.role === "user" ? "#fff" : c.text, fontSize: 13 }}>
-									{msg.content}
-								</Text>
+								{msg.role === "user" ? (
+									<Text style={{ color: "#fff", fontSize: 13 }}>{msg.content}</Text>
+								) : (
+									<Markdown style={{
+										body: { color: c.text, fontSize: 13 },
+										code_inline: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 12 },
+										fence: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 11, padding: 8, borderRadius: 6 },
+										link: { color: c.accent },
+									}}>
+										{msg.content}
+									</Markdown>
+								)}
 								{msg.createdAt && (
 									<Text style={{ color: msg.role === "user" ? "rgba(255,255,255,0.5)" : c.textSecondary, fontSize: 10, marginTop: 4 }}>
 										{new Date(msg.createdAt).toLocaleTimeString()}
