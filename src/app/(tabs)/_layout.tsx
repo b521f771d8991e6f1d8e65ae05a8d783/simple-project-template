@@ -8,16 +8,16 @@ import { LanguageSelector } from "@/components/language-selector";
 import { Logo } from "@/components/logo";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useTranslation } from "@/lib/i18n";
-import { APP_VERSION } from "@/lib/version";
 import { Colors } from "@/constants/theme";
 
 type AppMode = "develop" | "dream" | "freeze";
 
-// Map route names to i18n keys
 const routeLabels: Record<string, string> = {
 	index: "nav.home",
-	explore: "nav.explore",
 };
+
+// Routes to hide from the left tab bar (rendered separately on the right)
+const hiddenRoutes = new Set(["about"]);
 
 function useAppMode(): AppMode {
 	const [mode, setMode] = useState<AppMode>("freeze");
@@ -40,6 +40,9 @@ function NavBar({
 	const c = Colors[colorScheme];
 	const t = useTranslation();
 
+	const aboutIndex = state.routes.findIndex((r) => r.name === "about");
+	const aboutFocused = state.index === aboutIndex;
+
 	return (
 		<View style={[styles.navBar, { backgroundColor: c.background, borderBottomColor: c.border }]}>
 			<View style={styles.logo}>
@@ -47,6 +50,7 @@ function NavBar({
 			</View>
 			<View style={styles.tabs}>
 				{state.routes.map((route, index) => {
+					if (hiddenRoutes.has(route.name)) return null;
 					const { options } = descriptors[route.key];
 					const isFocused = state.index === index;
 					const color = isFocused ? c.accent : c.icon;
@@ -67,14 +71,19 @@ function NavBar({
 					);
 				})}
 			</View>
-			<View style={styles.right}>
-				<Text style={[styles.meta, { color: c.textSecondary }]}>v{APP_VERSION}</Text>
-			</View>
+			<View style={styles.right} />
+			{aboutIndex !== -1 && (
+				<Pressable
+					onPress={() => navigation.navigate("about")}
+					style={styles.iconBtn}
+				>
+					<Text style={{ fontSize: 18, color: aboutFocused ? c.accent : c.icon }}>ℹ️</Text>
+				</Pressable>
+			)}
 			<LanguageSelector />
 			{(appMode === "dream" || appMode === "develop") && (
-				<Pressable onPress={onDreamPress} style={styles.tab}>
-					<IconSymbol size={20} name="sparkles" color={dreamOpen ? c.accent : c.icon} />
-					<Text style={[styles.label, { color: dreamOpen ? c.accent : c.icon }]}>{t("nav.dream")}</Text>
+				<Pressable onPress={onDreamPress} style={styles.iconBtn}>
+					<IconSymbol size={22} name="sparkles" color={dreamOpen ? "#f59e0b" : "#d4a017"} />
 				</Pressable>
 			)}
 		</View>
@@ -108,12 +117,9 @@ export default function TabLayout() {
 					}}
 				/>
 				<Tabs.Screen
-					name="explore"
+					name="about"
 					options={{
-						title: "Explore",
-						tabBarIcon: ({ color, size }) => (
-							<IconSymbol size={size} name="paperplane.fill" color={color} />
-						),
+						title: "About",
 					}}
 				/>
 			</Tabs>
@@ -148,6 +154,11 @@ const styles = StyleSheet.create({
 	},
 	right: {
 		paddingRight: 8,
+	},
+	iconBtn: {
+		paddingHorizontal: 8,
+		justifyContent: "center",
+		height: "100%",
 	},
 	meta: {
 		fontSize: 12,

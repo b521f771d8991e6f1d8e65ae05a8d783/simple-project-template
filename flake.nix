@@ -197,7 +197,6 @@
         allPackages =
           {
             inherit cloudflare-worker;
-            "expo-app" = expoApp;
             default = expoApp;
           }
           // lib.optionalAttrs pkgs.stdenv.isLinux { "docker-image" = dockerImage; };
