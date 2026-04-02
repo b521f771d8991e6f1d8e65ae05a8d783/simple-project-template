@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal } from "react-native";
 
 import { Colors } from "@/constants/theme";
@@ -7,12 +7,24 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 interface Message {
 	role: "user" | "assistant";
 	content: string;
-	operations?: { action: string; path: string; blocked?: boolean }[];
+	branch?: string;
+	hasChanges?: boolean;
 }
 
 interface DreamPanelProps {
 	visible: boolean;
 	onClose: () => void;
+}
+
+const baseUrl = Platform.OS === "web" ? "" : `http://localhost:${process.env.EXPO_PUBLIC_BACKEND_PORT ?? "8081"}`;
+
+async function dreamFetch(body: Record<string, unknown>) {
+	const res = await fetch(`${baseUrl}/api/dream`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	});
+	return res.json();
 }
 
 export function DreamPanel({ visible, onClose }: DreamPanelProps) {
@@ -22,33 +34,44 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [sessionId, setSessionId] = useState<string | null>(null);
 	const scrollRef = useRef<ScrollView>(null);
+
+	const scrollToEnd = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
 
 	const send = async () => {
 		const prompt = input.trim();
 		if (!prompt || loading) return;
 
-		const userMsg: Message = { role: "user", content: prompt };
-		setMessages((prev) => [...prev, userMsg]);
+		setMessages((prev) => [...prev, { role: "user", content: prompt }]);
 		setInput("");
 		setLoading(true);
 
 		try {
-			const baseUrl = Platform.OS === "web" ? "" : `http://localhost:${process.env.EXPO_PUBLIC_BACKEND_PORT ?? "8081"}`;
-			const res = await fetch(`${baseUrl}/api/dream`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ prompt }),
-			});
+			// Capture a screenshot of the app for context
+			let screenshot: string | undefined;
+			if (Platform.OS === "web" && typeof document !== "undefined") {
+				try {
+					const { default: html2canvas } = await import("html2canvas");
+					const canvas = await html2canvas(document.body, { scale: 0.5, logging: false });
+					screenshot = canvas.toDataURL("image/png");
+				} catch { /* screenshot is optional */ }
+			}
 
-			const data = await res.json();
+			const data = await dreamFetch({ prompt, sessionId, screenshot });
+			if (data.sessionId) setSessionId(data.sessionId);
 
-			if (!res.ok) {
+			if (data.error) {
 				setMessages((prev) => [...prev, { role: "assistant", content: `Error: ${data.error}` }]);
 			} else {
 				setMessages((prev) => [
 					...prev,
-					{ role: "assistant", content: data.summary, operations: data.operations },
+					{
+						role: "assistant",
+						content: data.summary,
+						branch: data.branch,
+						hasChanges: data.hasChanges,
+					},
 				]);
 			}
 		} catch (err) {
@@ -58,16 +81,34 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 			]);
 		} finally {
 			setLoading(false);
-			setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+			scrollToEnd();
+		}
+	};
+
+	const handleBranchAction = async (action: "keep" | "discard", branch: string, msgIndex: number) => {
+		setLoading(true);
+		try {
+			const data = await dreamFetch({ action, branch });
+			setMessages((prev) =>
+				prev.map((m, i) =>
+					i === msgIndex ? { ...m, content: `${m.content}\n\n${data.summary ?? data.error}`, branch: undefined } : m,
+				),
+			);
+		} catch (err) {
+			setMessages((prev) => [
+				...prev,
+				{ role: "assistant", content: `Error: ${err instanceof Error ? err.message : "unknown"}` },
+			]);
+		} finally {
+			setLoading(false);
+			scrollToEnd();
 		}
 	};
 
 	return (
-		<Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-			{/* Backdrop */}
-			<Pressable style={styles.backdrop} onPress={onClose} />
+		<Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+			<Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-			{/* Panel — anchored bottom-right */}
 			<View style={[styles.panel, { backgroundColor: c.background, borderColor: c.border }]}>
 				{/* Header */}
 				<View style={[styles.header, { borderBottomColor: c.border }]}>
@@ -78,37 +119,49 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				</View>
 
 				{/* Messages */}
-				<ScrollView
-					ref={scrollRef}
-					style={styles.messages}
-					contentContainerStyle={styles.messagesContent}
-				>
+				<ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
 					{messages.length === 0 && (
 						<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
-							Describe what you want to change.{"\n"}The app will modify itself in real-time.
+							Describe what you want to change.{"\n"}Changes are made on a branch — keep or discard after.
 						</Text>
 					)}
 
 					{messages.map((msg, i) => (
-						<View
-							key={i}
-							style={[
-								styles.bubble,
-								msg.role === "user"
-									? { alignSelf: "flex-end", backgroundColor: c.accent }
-									: { alignSelf: "flex-start", backgroundColor: isDark ? "#1c1c1e" : "#f0f0f0" },
-							]}
-						>
-							<Text style={{ color: msg.role === "user" ? "#fff" : c.text, fontSize: 13 }}>
-								{msg.content}
-							</Text>
-							{msg.operations && msg.operations.length > 0 && (
-								<View style={styles.ops}>
-									{msg.operations.map((op, j) => (
-										<Text key={j} style={{ fontSize: 10, color: op.blocked ? "#ef4444" : c.textSecondary }}>
-											{op.blocked ? "blocked" : op.action === "write" ? "~" : "x"} {op.path}
-										</Text>
-									))}
+						<View key={i}>
+							<View
+								style={[
+									styles.bubble,
+									msg.role === "user"
+										? { alignSelf: "flex-end", backgroundColor: c.accent }
+										: { alignSelf: "flex-start", backgroundColor: isDark ? "#1c1c1e" : "#f0f0f0" },
+								]}
+							>
+								<Text style={{ color: msg.role === "user" ? "#fff" : c.text, fontSize: 13 }}>
+									{msg.content}
+								</Text>
+								{msg.branch && (
+									<Text style={{ fontSize: 10, color: c.textSecondary, marginTop: 4 }}>
+										branch: {msg.branch}
+									</Text>
+								)}
+							</View>
+							{/* Keep / Discard buttons */}
+							{msg.branch && msg.hasChanges && (
+								<View style={styles.branchActions}>
+									<Pressable
+										onPress={() => handleBranchAction("keep", msg.branch!, i)}
+										disabled={loading}
+										style={[styles.actionBtn, { backgroundColor: "#22c55e" }]}
+									>
+										<Text style={styles.actionBtnText}>Keep</Text>
+									</Pressable>
+									<Pressable
+										onPress={() => handleBranchAction("discard", msg.branch!, i)}
+										disabled={loading}
+										style={[styles.actionBtn, { backgroundColor: "#ef4444" }]}
+									>
+										<Text style={styles.actionBtnText}>Discard</Text>
+									</Pressable>
 								</View>
 							)}
 						</View>
@@ -128,9 +181,15 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 						onChangeText={setInput}
 						placeholder="Describe a change..."
 						placeholderTextColor={c.textSecondary}
-						style={[styles.input, { color: c.text, backgroundColor: isDark ? "#1c1c1e" : "#f5f5f5" }]}
+						style={[styles.input, { color: c.text, backgroundColor: isDark ? "#242424" : "#f5f5f5" }]}
 						multiline
 						onSubmitEditing={send}
+						onKeyPress={(e) => {
+							if (Platform.OS === "web" && e.nativeEvent.key === "Enter" && !(e as unknown as React.KeyboardEvent).shiftKey) {
+								e.preventDefault();
+								send();
+							}
+						}}
 						editable={!loading}
 					/>
 					<Pressable
@@ -193,13 +252,25 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
-	ops: {
+	branchActions: {
+		flexDirection: "row",
+		gap: 8,
 		marginTop: 6,
-		gap: 2,
+		marginLeft: 4,
+	},
+	actionBtn: {
+		borderRadius: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 5,
+	},
+	actionBtnText: {
+		color: "#fff",
+		fontSize: 12,
+		fontWeight: "600",
 	},
 	inputRow: {
 		flexDirection: "row",
-		alignItems: "flex-end",
+		alignItems: "center",
 		padding: 10,
 		gap: 8,
 		borderTopWidth: StyleSheet.hairlineWidth,
