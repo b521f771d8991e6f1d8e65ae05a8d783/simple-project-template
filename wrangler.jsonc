@@ -10,6 +10,12 @@
     "assets": {
         "directory": "dist/client"
     },
+    "rules": [
+        { "type": "Text", "globs": ["dist/server/**/*.html"], "fallthrough": true },
+        { "type": "Data", "globs": ["dist/server/**/*.json"], "fallthrough": true },
+        { "type": "ESModule", "globs": ["dist/server/**/*.js"], "fallthrough": true }
+    ],
+    "find_additional_modules": true,
     "build": {
         "command": "npm run build:cloudflare-worker"
     },
