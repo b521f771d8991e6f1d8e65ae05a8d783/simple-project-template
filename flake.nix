@@ -36,7 +36,6 @@
             nativeBuildInputs = with pkgs; [
               git
             ];
-
             buildPhase = ''
               export HOME=$TMPDIR
               export EXPO_NO_TELEMETRY=1
@@ -44,12 +43,6 @@
               echo "${version}" > VERSION
 
               npm run build:node
-            '';
-
-            postBuild = ''
-              # Patch shebang to use nodejs-slim instead of full nodejs
-              substituteInPlace dist/main.js \
-                --replace-fail "#!/usr/bin/env node" "#!${pkgs.nodejs-slim}/bin/node"
             '';
 
             installPhase = ''
