@@ -72,9 +72,9 @@ export default function AboutScreen() {
 						darkColor="#242424"
 					>
 						<ThemedText type="subtitle" style={{ marginBottom: 8 }}>Infrastructure</ThemedText>
-						<Row label="Build System" value="Nix Flakes" />
+						<Row label="Build System" value="npm scripts" />
 						<Row label="CI/CD" value="GitHub Actions" />
-						<Row label="Hosting" value="Cloudflare Workers / Docker" />
+						<Row label="Hosting" value="Cloudflare Workers" />
 						<Row label="AI Agent" value="Claude Code" />
 					</ThemedView>
 				</ScrollView>
