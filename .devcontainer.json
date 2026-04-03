@@ -1,12 +1,14 @@
 {
     "image": "docker.io/debian:latest",
+    "containerUser": "vscode",
     "remoteEnv": {
         "PROMPT": "%F{cyan}%n@%m%f:%F{yellow}%~%f %# "
     },
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
             "installZsh": true,
-            "configureZshAsDefaultShell": true
+            "configureZshAsDefaultShell": true,
+            "username": "vscode"
         },
         "ghcr.io/anthropics/devcontainer-features/claude-code:latest": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
