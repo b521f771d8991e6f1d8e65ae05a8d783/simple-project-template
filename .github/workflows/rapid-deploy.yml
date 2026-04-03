@@ -17,9 +17,9 @@ name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
-    branches-ignore: [beta, stable]
+    branches-ignore: [main, dev, beta]
   pull_request:
-    branches-ignore: [beta, stable]
+    branches-ignore: [main, dev, beta]
 
 jobs:
   rapid-deploy:
@@ -49,7 +49,15 @@ jobs:
         run: |
           source .env
           if [ "${{ github.event_name }}" = "push" ]; then
-            npx wrangler versions upload --name "$PROJECT_NAME" --tag "${{ github.ref_name }}" --message "Branch: ${{ github.ref_name }}"
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              # Production: deploy to live traffic
+              npx wrangler deploy --name "$PROJECT_NAME"
+            else
+              # Preview: upload version with branch alias (no production traffic)
+              npx wrangler versions upload --name "$PROJECT_NAME" \
+                --tag "${{ github.ref_name }}" \
+                --message "Branch: ${{ github.ref_name }}"
+            fi
           fi
         env:
           TMPDIR: /tmp
