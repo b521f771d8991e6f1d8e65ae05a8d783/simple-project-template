@@ -17,9 +17,7 @@ name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
-    branches-ignore: [main, dev, beta]
   pull_request:
-    branches-ignore: [main, dev, beta]
 
 jobs:
   rapid-deploy:
