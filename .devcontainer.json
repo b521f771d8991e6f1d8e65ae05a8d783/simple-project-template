@@ -1,13 +1,18 @@
 {
     "image": "docker.io/debian:latest",
     "remoteEnv": {
-        "SHELL": "/bin/bash",
         "PROMPT": "%F{cyan}%n@%m%f:%F{yellow}%~%f %# "
     },
     "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": true,
+            "configureZshAsDefaultShell": true
+        },
         "ghcr.io/anthropics/devcontainer-features/claude-code:latest": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
-        "ghcr.io/devcontainers/features/node:1": {}
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers/features/rust:1": {},
+        "ghcr.io/devcontainers/features/nix:1": {}
     },
     "customizations": {
         "vscode": {
