@@ -3,31 +3,44 @@
     // Wrangler bundles src/worker.ts. Static assets from dist/client/ (expo export).
     "$schema": "node_modules/wrangler/config-schema.json",
     "main": "src/worker.ts",
-    "compatibility_date": "2026-03-01",
+    "compatibility_date": "026-01-28",
     "compatibility_flags": [
         "nodejs_compat"
     ],
-
     // base_dir must cover both worker entry (src/) and build output (dist/server/)
     "base_dir": ".",
     "find_additional_modules": true,
-
     // Static web assets (expo export --platform web -> dist/client)
     "assets": {
         "directory": "dist/client"
     },
-
     // Include Expo server build output (dist/server/) in the worker bundle
     "rules": [
-        { "type": "Text", "globs": ["dist/server/**/*.json"], "fallthrough": true },
-        { "type": "CommonJS", "globs": ["dist/server/**/*.js"], "fallthrough": true },
-        { "type": "Text", "globs": ["dist/server/**/*.html"], "fallthrough": true }
+        {
+            "type": "Text",
+            "globs": [
+                "dist/server/**/*.json"
+            ],
+            "fallthrough": true
+        },
+        {
+            "type": "CommonJS",
+            "globs": [
+                "dist/server/**/*.js"
+            ],
+            "fallthrough": true
+        },
+        {
+            "type": "Text",
+            "globs": [
+                "dist/server/**/*.html"
+            ],
+            "fallthrough": true
+        }
     ],
-
     "build": {
         "command": "npm run build:cloudflare-worker"
     },
-
     "observability": {
         "enabled": false,
         "head_sampling_rate": 1,
