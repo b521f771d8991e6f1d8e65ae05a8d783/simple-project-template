@@ -3,12 +3,9 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-    rust-overlay.url = "github:oxalica/rust-overlay";
-    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
-    crane.url = "github:ipetkov/crane";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, crane }:
+  outputs = { self, nixpkgs }:
     let
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
@@ -16,22 +13,8 @@
     {
       packages = forAllSystems (system:
         let
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [ rust-overlay.overlays.default ];
-          };
+          pkgs = nixpkgs.legacyPackages.${system};
           version = self.shortRev or self.dirtyShortRev or "dev";
-
-          # Rust toolchain with musl (static binaries) and WASM targets
-          rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-            targets = [
-              "x86_64-unknown-linux-musl"
-              "aarch64-unknown-linux-musl"
-              "wasm32-unknown-unknown"
-            ];
-          };
-
-          craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
           # Read PROJECT_NAME from .env
           envFile = builtins.readFile ./.env;
@@ -61,6 +44,12 @@
               echo "${version}" > VERSION
 
               npm run build:node
+            '';
+
+            postBuild = ''
+              # Patch shebang to use nodejs-slim instead of full nodejs
+              substituteInPlace dist/main.js \
+                --replace-fail "#!/usr/bin/env node" "#!${pkgs.nodejs-slim}/bin/node"
             '';
 
             installPhase = ''
