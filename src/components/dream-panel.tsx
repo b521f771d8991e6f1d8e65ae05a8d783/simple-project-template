@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal, PanResponder, Dimensions } from "react-native";
+import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal, PanResponder, Dimensions, Linking } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import { Colors } from "@/constants/theme";
@@ -37,6 +37,9 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const dragOffset = useRef({ x: 0, y: 0 });
 	const scrollRef = useRef<ScrollView>(null);
 
+	// Track pending preview jobs: jobId → previewUrl
+	const [pendingPreview, setPendingPreview] = useState<{ jobId: string; previewUrl: string; summary: string } | null>(null);
+
 	const panResponder = useRef(
 		PanResponder.create({
 			onStartShouldSetPanResponder: () => true,
@@ -52,7 +55,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		}),
 	).current;
 
-	// Reload history from DB every time the panel opens (survives hot reloads)
+	// Reload history from DB every time the panel opens
 	const reload = useCallback(async () => {
 		console.log("[Dream] Reloading chat history...");
 		try {
@@ -80,7 +83,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		[],
 	);
 
-	// Scroll to bottom when messages change
 	useEffect(() => {
 		if (messages.length > 0) scrollToEnd();
 	}, [messages.length, scrollToEnd]);
@@ -97,7 +99,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		setMessages((prev) => [...prev, { ...userMsg, id: userId }]);
 		setInput("");
 		setLoading(true);
-		setStatus("Thinking...");
+		setStatus("Cloning repository...");
 
 		try {
 			let screenshot: string | undefined;
@@ -115,17 +117,34 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 			const jobId = startRes.jobId;
 			console.log(`[Dream] Job started: ${jobId}`);
 
-			// Poll until done
+			// Poll until preview or done (max 5 minutes for clone + claude)
 			let result: any = null;
-			while (true) {
-				await new Promise((r) => setTimeout(r, 1000));
-				const poll = await dreamFetch({ pollJobId: jobId });
+			const deadline = Date.now() + 300_000;
+			while (Date.now() < deadline) {
+				await new Promise((r) => setTimeout(r, 1500));
+				let poll: any;
+				try {
+					poll = await dreamFetch({ pollJobId: jobId });
+				} catch (err) {
+					console.error("[Dream] Poll error:", err);
+					continue;
+				}
 
-				// Show latest log line as status
+				if (poll.error) throw new Error(poll.error);
+
 				if (poll.logs?.length) {
 					const lastLog = poll.logs[poll.logs.length - 1];
 					setStatus(lastLog);
 					for (const log of poll.logs) console.log(`[Dream] ${log}`);
+				}
+
+				if (poll.status === "preview") {
+					// Don't finalize yet — show preview UI
+					if (poll.sessionId) setSessionId(poll.sessionId);
+					setPendingPreview({ jobId, previewUrl: poll.previewUrl, summary: poll.summary ?? "Changes ready for review." });
+					setLoading(false);
+					setStatus(null);
+					return;
 				}
 
 				if (poll.status === "done" || poll.status === "error") {
@@ -134,9 +153,11 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				}
 			}
 
+			if (!result) throw new Error("Timed out after 5 minutes");
 			if (result.status === "error") throw new Error(result.error ?? "Unknown error");
 			if (result.sessionId) setSessionId(result.sessionId);
 
+			// No preview needed (no changes made)
 			const finalText = (result.summary ?? "Done.").replace(/\n{3,}/g, "\n\n").trim();
 			const assistantMsg: DreamMessage = { role: "assistant", content: finalText, hasChanges: result.hasChanges };
 			const aId = await saveMessage({ ...assistantMsg, sessionId: result.sessionId }).catch(() => undefined);
@@ -152,10 +173,44 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		}
 	};
 
+	const handleAccept = async () => {
+		if (!pendingPreview) return;
+		setLoading(true);
+		setStatus("Applying changes...");
+		const { jobId, summary } = pendingPreview;
+		setPendingPreview(null);
+		try {
+			const res = await dreamFetch({ action: "accept", jobId });
+			if (res.error) throw new Error(res.error);
+			const finalText = (res.summary ?? summary ?? "Changes applied.").replace(/\n{3,}/g, "\n\n").trim();
+			const msg: DreamMessage = { role: "assistant", content: finalText, hasChanges: true };
+			const id = await saveMessage({ ...msg, sessionId: sessionId ?? undefined }).catch(() => undefined);
+			setMessages((prev) => [...prev, { ...msg, id }]);
+		} catch (err) {
+			const msg: DreamMessage = { role: "assistant", content: `Accept failed: ${err instanceof Error ? err.message : "unknown"}` };
+			const id = await saveMessage(msg).catch(() => undefined);
+			setMessages((prev) => [...prev, { ...msg, id }]);
+		} finally {
+			setLoading(false);
+			setStatus(null);
+		}
+	};
+
+	const handleDecline = async () => {
+		if (!pendingPreview) return;
+		const { jobId } = pendingPreview;
+		setPendingPreview(null);
+		await dreamFetch({ action: "decline", jobId }).catch(() => {});
+		const msg: DreamMessage = { role: "assistant", content: "Changes discarded." };
+		const id = await saveMessage(msg).catch(() => undefined);
+		setMessages((prev) => [...prev, { ...msg, id }]);
+	};
+
 	const handleClear = async () => {
 		await clearHistory().catch(() => {});
 		setMessages([]);
 		setSessionId(null);
+		setPendingPreview(null);
 	};
 
 	// Commit history
@@ -179,7 +234,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 			const id = await saveMessage(msg).catch(() => undefined);
 			setMessages((prev) => [...prev, { ...msg, id }]);
 			setShowCommits(false);
-			loadCommits(); // refresh
+			loadCommits();
 		} catch (err) {
 			const msg: DreamMessage = { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "unknown"}` };
 			const id = await saveMessage(msg).catch(() => undefined);
@@ -243,7 +298,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 
 				{/* Messages */}
 				{!showCommits && <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
-					{initialized && messages.length === 0 && (
+					{initialized && messages.length === 0 && !pendingPreview && (
 						<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
 							{t("dream.empty")}
 						</Text>
@@ -280,6 +335,39 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 						</View>
 					))}
 
+					{/* Preview card */}
+					{pendingPreview && !loading && (
+						<View style={[styles.bubble, { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" }]}>
+							<Markdown style={{
+								body: { color: c.text, fontSize: 13 },
+								code_inline: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 12 },
+								fence: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 11, padding: 8, borderRadius: 6 },
+								link: { color: c.accent },
+							}}>
+								{pendingPreview.summary}
+							</Markdown>
+							<Pressable
+								onPress={() => Linking.openURL(pendingPreview.previewUrl)}
+								style={[styles.previewLink, { borderColor: c.accent }]}
+							>
+								<Text style={{ color: c.accent, fontSize: 12, fontWeight: "500" }}>
+									Open Preview →
+								</Text>
+								<Text style={{ color: c.textSecondary, fontSize: 10 }}>
+									{pendingPreview.previewUrl}
+								</Text>
+							</Pressable>
+							<View style={styles.decisionRow}>
+								<Pressable onPress={handleAccept} style={[styles.decisionBtn, { backgroundColor: "#22c55e" }]}>
+									<Text style={styles.decisionBtnText}>Accept</Text>
+								</Pressable>
+								<Pressable onPress={handleDecline} style={[styles.decisionBtn, { backgroundColor: isDark ? "#3a3a3a" : "#e5e7eb" }]}>
+									<Text style={[styles.decisionBtnText, { color: c.text }]}>Decline</Text>
+								</Pressable>
+							</View>
+						</View>
+					)}
+
 					{loading && (
 						<View style={[styles.bubble, { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0", gap: 6 }]}>
 							<ActivityIndicator size="small" color={c.accent} />
@@ -308,12 +396,12 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 								send();
 							}
 						}}
-						editable={!loading}
+						editable={!loading && !pendingPreview}
 					/>
 					<Pressable
 						onPress={send}
-						disabled={loading || !input.trim()}
-						style={[styles.sendBtn, { backgroundColor: c.accent, opacity: loading || !input.trim() ? 0.4 : 1 }]}
+						disabled={loading || !input.trim() || !!pendingPreview}
+						style={[styles.sendBtn, { backgroundColor: c.accent, opacity: loading || !input.trim() || !!pendingPreview ? 0.4 : 1 }]}
 					>
 						<Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>{t("dream.send")}</Text>
 					</Pressable>
@@ -364,18 +452,26 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
-	branchActions: {
+	previewLink: {
+		marginTop: 8,
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingHorizontal: 10,
+		paddingVertical: 6,
+		gap: 2,
+	},
+	decisionRow: {
 		flexDirection: "row",
 		gap: 8,
-		marginTop: 6,
-		marginLeft: 4,
+		marginTop: 8,
 	},
-	actionBtn: {
-		borderRadius: 10,
-		paddingHorizontal: 12,
-		paddingVertical: 5,
+	decisionBtn: {
+		flex: 1,
+		borderRadius: 8,
+		paddingVertical: 6,
+		alignItems: "center",
 	},
-	actionBtnText: {
+	decisionBtnText: {
 		color: "#fff",
 		fontSize: 12,
 		fontWeight: "600",

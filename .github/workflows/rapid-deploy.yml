@@ -43,18 +43,14 @@ jobs:
           key: build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: build-${{ runner.os }}-
 
-      - name: Install tools & dependencies 🔧
-        run: |
-          curl -fsSL https://bun.sh/install | bash
-          export PATH="$HOME/.bun/bin:$PATH"
-          bun install --frozen-lockfile --ignore-scripts
-          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+      - name: Install dependencies 🔧
+        run: npm ci
 
       # ── Build & Deploy 🏗️ ─────────────────────────────────────
       - name: Build & deploy 🏗️🚀
         run: |
           source .env
-          bun run build:cloudflare-worker:dev
+          npm run build:cloudflare-worker:dev
           if [ "${{ github.event_name }}" = "push" ]; then
             mkdir -p result-cloudflare/assets
             cp -r dist/. result-cloudflare/assets/
@@ -65,7 +61,7 @@ jobs:
             else
               WORKER_NAME="${PROJECT_NAME}-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
             fi
-            bunx wrangler deploy result-cloudflare/worker.js --name "$WORKER_NAME" --no-bundle
+            npx wrangler deploy result-cloudflare/worker.js --name "$WORKER_NAME" --no-bundle
           fi
         env:
           TMPDIR: /tmp
