@@ -63,7 +63,6 @@ jobs:
           TMPDIR: /tmp
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          SKIP_NIX_BUILD: "1"
 
       - name: Upload build artifacts 📤
         uses: actions/upload-artifact@main
