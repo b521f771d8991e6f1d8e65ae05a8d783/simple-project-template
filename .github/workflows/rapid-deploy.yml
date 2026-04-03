@@ -9,11 +9,12 @@
 # Jobs:
 #   rapid-deploy    — 📱 Expo web + ☁️ Cloudflare Workers deploy
 #                     main → production deploy, other branches → preview version
+#   docker-build    — 🐳 Build and push Docker image to GHCR
 #
 # Secrets required:
 #   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
 #   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID
-name: Rapid Deploy 🚀
+name: Build & Deploy 🚀
 on:
   workflow_dispatch:
   push:
@@ -38,7 +39,7 @@ jobs:
             node_modules
             /tmp/metro-cache
             /tmp/metro-file-map-*
-          key: build-${{ runner.os }}-${{ hashFiles('bun.lockb', 'package-lock.json') }}
+          key: build-${{ runner.os }}-${{ hashFiles('bun.lock', 'package-lock.json') }}
           restore-keys: build-${{ runner.os }}-
 
       - name: Install tools & dependencies 🔧
@@ -55,10 +56,10 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             if [ "${{ github.ref }}" = "refs/heads/main" ]; then
               # Production: deploy to live traffic
-              npx wrangler deploy --name "$PROJECT_NAME"
+              bunx wrangler deploy --name "$PROJECT_NAME"
             else
               # Preview: upload version with branch alias (no production traffic)
-              npx wrangler versions upload --name "$PROJECT_NAME" \
+              bunx wrangler versions upload --name "$PROJECT_NAME" \
                 --tag "${{ github.ref_name }}" \
                 --message "Branch: ${{ github.ref_name }}"
             fi
@@ -75,4 +76,33 @@ jobs:
           name: result-cloudflare-worker-rapid-release
           path: dist/
           if-no-files-found: error
+
+  docker-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@main
+
+      - name: Log in to GHCR 🔑
+        uses: docker/login-action@main
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx 🏗️
+        uses: docker/setup-buildx-action@main
+
+      - name: Build & push 🐳
+        uses: docker/build-push-action@main
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
