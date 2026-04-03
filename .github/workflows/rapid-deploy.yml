@@ -50,18 +50,15 @@ jobs:
       - name: Build & deploy 🏗️🚀
         run: |
           source .env
-          npm run build:cloudflare-worker:dev
-          
-          mkdir -p result-cloudflare/assets
-          cp -r dist/. result-cloudflare/assets/
-          mv result-cloudflare/assets/worker.js result-cloudflare/worker.js
-          rm -f result-cloudflare/assets/main.js
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            WORKER_NAME="${PROJECT_NAME}"
-          else
-            WORKER_NAME="${PROJECT_NAME}-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
+          # Deploy — wrangler runs build:cloudflare-worker, then bundles src/worker.ts
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              WORKER_NAME="${PROJECT_NAME}"
+            else
+              WORKER_NAME="${PROJECT_NAME}-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
+            fi
+            npx wrangler deploy --name "$WORKER_NAME"
           fi
-          npx wrangler deploy result-cloudflare/worker.js --name "$WORKER_NAME" --no-bundle
         env:
           TMPDIR: /tmp
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
