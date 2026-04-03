@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal, PanResponder, Dimensions, Linking } from "react-native";
+import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal, PanResponder, Dimensions } from "react-native";
 import Markdown from "react-native-markdown-display";
 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { saveMessage, loadMessages, clearHistory, type DreamMessage } from "@/lib/dream-history";
 import { useTranslation } from "@/lib/i18n";
+import { Popup } from "@/components/popup";
 
 interface DreamPanelProps {
 	visible: boolean;
@@ -39,6 +40,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 
 	// Track pending preview jobs: jobId → previewUrl
 	const [pendingPreview, setPendingPreview] = useState<{ jobId: string; previewUrl: string; summary: string } | null>(null);
+	const [showPreviewPopup, setShowPreviewPopup] = useState(false);
 
 	const panResponder = useRef(
 		PanResponder.create({
@@ -213,27 +215,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		setPendingPreview(null);
 	};
 
-	// Job history
-	interface Job {
-		id: string;
-		status: string;
-		summary?: string;
-		hasChanges?: boolean;
-		previewUrl?: string;
-		error?: string;
-		createdAt: number;
-		finishedAt?: number;
-	}
-	const [jobs, setJobs] = useState<Job[]>([]);
-	const [showJobs, setShowJobs] = useState(false);
-
-	const loadJobs = async () => {
-		const data = await dreamFetch({ action: "listJobs" });
-		setJobs(data.jobs ?? []);
-		setShowJobs(true);
-	};
-
-	// Commit history (for reverts)
+	// Commit history
 	interface Commit { hash: string; message: string; ago: string }
 	const [commits, setCommits] = useState<Commit[]>([]);
 	const [showCommits, setShowCommits] = useState(false);
@@ -242,7 +224,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		const data = await dreamFetch({ action: "listCommits" });
 		setCommits(data.commits ?? []);
 		setShowCommits(true);
-		setShowJobs(false);
 	};
 
 	const revertCommit = async (hash: string) => {
@@ -266,14 +247,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		}
 	};
 
-	const formatTime = (epoch: number) => new Date(epoch * 1000).toLocaleTimeString();
-	const statusColor = (s: string) => {
-		if (s === "running" || s === "accepting") return "#f59e0b";
-		if (s === "preview") return "#3b82f6";
-		if (s === "done") return "#22c55e";
-		if (s === "error") return "#ef4444";
-		return c.textSecondary;
-	};
 
 	if (!visible) return null;
 
@@ -286,15 +259,10 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				<View style={[styles.header, { borderBottomColor: c.border, cursor: "grab" } as any]} {...panResponder.panHandlers}>
 					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
 					<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-						<Pressable onPress={() => {
-							if (showJobs || showCommits) { setShowJobs(false); setShowCommits(false); }
-							else { loadJobs(); }
-						}} hitSlop={8}>
-							<Text style={{ color: (showJobs || showCommits) ? c.accent : c.textSecondary, fontSize: 12 }}>
-								{showJobs || showCommits ? "Chat" : "Jobs"}
-							</Text>
+						<Pressable onPress={() => { if (showCommits) { setShowCommits(false); } else { loadCommits(); } }} hitSlop={8}>
+							<Text style={{ color: showCommits ? c.accent : c.textSecondary, fontSize: 12 }}>{showCommits ? "Chat" : "History"}</Text>
 						</Pressable>
-						{!showJobs && !showCommits && messages.length > 0 && (
+						{!showCommits && messages.length > 0 && (
 							<Pressable onPress={handleClear} hitSlop={8}>
 								<Text style={{ color: c.textSecondary, fontSize: 12 }}>Clear</Text>
 							</Pressable>
@@ -305,44 +273,9 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					</View>
 				</View>
 
-				{/* Jobs view */}
-				{showJobs && !showCommits && (
-					<ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
-						{jobs.length === 0 && (
-							<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
-								No jobs yet.
-							</Text>
-						)}
-						{jobs.map((job) => (
-							<View key={job.id} style={[styles.commitRow, { borderBottomColor: c.border }]}>
-								<View style={{ flex: 1, gap: 2 }}>
-									<View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-										<View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: statusColor(job.status) }} />
-										<Text style={{ color: c.text, fontSize: 12, fontWeight: "500" }}>{job.status}</Text>
-									</View>
-									<Text style={{ color: c.text, fontSize: 12 }} numberOfLines={2}>
-										{job.summary ?? job.error ?? job.id}
-									</Text>
-									<Text style={{ color: c.textSecondary, fontSize: 10 }}>
-										{formatTime(job.createdAt)}{job.finishedAt ? ` — ${formatTime(job.finishedAt)}` : ""}
-									</Text>
-								</View>
-								{job.status === "preview" && job.previewUrl && (
-									<Pressable onPress={() => Linking.openURL(job.previewUrl!)} style={styles.revertBtn}>
-										<Text style={{ color: c.accent, fontSize: 11, fontWeight: "500" }}>Preview</Text>
-									</Pressable>
-								)}
-							</View>
-						))}
-					</ScrollView>
-				)}
-
 				{/* Commit history view */}
 				{showCommits && (
 					<ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
-						<Pressable onPress={() => { setShowCommits(false); loadJobs(); }} style={{ alignSelf: "flex-start", marginBottom: 4 }}>
-							<Text style={{ color: c.accent, fontSize: 11 }}>← Jobs</Text>
-						</Pressable>
 						{commits.length === 0 && (
 							<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
 								No dream commits yet.
@@ -367,7 +300,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				)}
 
 				{/* Messages */}
-				{!showCommits && !showJobs && <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
+				{!showCommits && <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
 					{initialized && messages.length === 0 && !pendingPreview && (
 						<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
 							{t("dream.empty")}
@@ -405,29 +338,14 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 						</View>
 					))}
 
-					{/* Preview card */}
+					{/* Preview — chat bubble with Show Preview / Accept / Decline */}
 					{pendingPreview && !loading && (
 						<View style={[styles.bubble, { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" }]}>
-							<Markdown style={{
-								body: { color: c.text, fontSize: 13 },
-								code_inline: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 12 },
-								fence: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 11, padding: 8, borderRadius: 6 },
-								link: { color: c.accent },
-							}}>
-								{pendingPreview.summary}
-							</Markdown>
-							<Pressable
-								onPress={() => Linking.openURL(pendingPreview.previewUrl)}
-								style={[styles.previewLink, { borderColor: c.accent }]}
-							>
-								<Text style={{ color: c.accent, fontSize: 12, fontWeight: "500" }}>
-									Open Preview →
-								</Text>
-								<Text style={{ color: c.textSecondary, fontSize: 10 }}>
-									{pendingPreview.previewUrl}
-								</Text>
-							</Pressable>
+							<Text style={{ color: c.text, fontSize: 13, marginBottom: 6 }}>Preview ready.</Text>
 							<View style={styles.decisionRow}>
+								<Pressable onPress={() => setShowPreviewPopup(true)} style={[styles.decisionBtn, { backgroundColor: c.accent }]}>
+									<Text style={styles.decisionBtnText}>Show Preview</Text>
+								</Pressable>
 								<Pressable onPress={handleAccept} style={[styles.decisionBtn, { backgroundColor: "#22c55e" }]}>
 									<Text style={styles.decisionBtnText}>Accept</Text>
 								</Pressable>
@@ -477,6 +395,30 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					</Pressable>
 				</View>
 			</Pressable>
+
+			{/* Preview popup with iframe — only when user clicks Show Preview */}
+			{Platform.OS === "web" && pendingPreview && showPreviewPopup && (
+				<Popup
+					open
+					onClose={() => setShowPreviewPopup(false)}
+					title="Dream Preview"
+					dark={isDark}
+					width="80vw"
+					maxWidth={1400}
+					height="85vh"
+					overlay={false}
+					zIndex={60}
+					actions={[
+						{ label: "Accept", onClick: () => { setShowPreviewPopup(false); handleAccept(); } },
+						{ label: "Decline", onClick: () => { setShowPreviewPopup(false); handleDecline(); } },
+					]}
+				>
+					<iframe
+						src={pendingPreview.previewUrl}
+						style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
+					/>
+				</Popup>
+			)}
 		</Modal>
 	);
 }
