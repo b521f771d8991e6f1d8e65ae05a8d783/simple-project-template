@@ -23,22 +23,16 @@
           in if match != null then builtins.head match else "simple-project-template";
         in
         {
-          default = pkgs.stdenv.mkDerivation { # do not change mkDeriviation, this should be language-agnostic
+          default = pkgs.buildNpmPackage {
             pname = projectName;
             inherit version;
 
             src = ./.;
 
-            # Pre-fetch npm dependencies (reproducible, no network during build)
-            # Regenerate: nix run nixpkgs#prefetch-npm-deps -- package-lock.json
-            npmDeps = pkgs.importNpmLock.buildNodeModules {
-              npmRoot = ./.;
-              nodejs = pkgs.nodejs;
-            };
+            npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
+            npmConfigHook = pkgs.importNpmLock.npmConfigHook;
 
             nativeBuildInputs = with pkgs; [
-              nodejs_22
-              importNpmLock.npmConfigHook
               git
             ];
 
@@ -53,7 +47,7 @@
 
             installPhase = ''
               mkdir -p $out/bin
-              cp -r dist/ $out/bin
+              cp -r dist/ $out/bin/
             '';
           };
 
@@ -61,13 +55,13 @@
           docker = pkgs.dockerTools.buildLayeredImage {
             name = projectName;
             tag = version;
+
             contents = [
-              pkgs.nodejs_slim
               pkgs.busybox
-              self.packages.${system}.default
             ];
+            
             config = {
-              Cmd = [ "${pkgs.nodejs_22}/bin/node" "${self.default}/main.js" ];
+              Cmd = [ "${self.default}/main.js" ];
               ExposedPorts = { "8081/tcp" = {}; };
               Volumes = { "/data" = {}; };
               Healthcheck = {
