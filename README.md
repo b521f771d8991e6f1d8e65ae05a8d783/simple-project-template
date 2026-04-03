@@ -1,20 +1,19 @@
 # simple-project-template
 
-A cross-platform application template built with Expo (React Native), TypeScript, and Nix. Deploys to Cloudflare Workers, Docker, or runs natively on iOS/Android.
+A cross-platform application built with Expo (React Native) and TypeScript. Deploys to Cloudflare Workers or runs natively on iOS/Android.
 
-Application based on this template have two modes: **develop** and **build**.
+Applications based on this template have two modes: **develop** and **build**.
 
 | Mode | Command | Who | What |
 |------|---------|-----|------|
 | **Develop** | `npm run dev` | Developers | VS Code + Metro dev server with Dream Mode (Claude Code AI). |
-| **Build** | `npm run build` | CI / release | Production release builds. Immutable output for deployment. |
+| **Build** | `npm run build` | CI / release | Production release builds. Minified output for deployment. |
 
 ## Quick Start
 
 ```bash
-nix develop          # enter dev shell (Node, git, etc.)
 npm install          # install JS dependencies
-npm run dev      # start developing
+npm run dev          # start developing
 ```
 
 ## Develop
@@ -31,7 +30,7 @@ To use Dream Mode, set `ANTHROPIC_API_KEY` in `.env` or log in via `claude login
 
 Production release builds with `NODE_ENV=production` and minified JS bundles. Dream Mode is disabled.
 
-**Node.js / Docker:**
+**Node.js:**
 ```bash
 npm run build
 node dist/main.js
@@ -40,12 +39,6 @@ node dist/main.js
 **Cloudflare Workers:**
 ```bash
 npm run build:worker
-```
-
-**Via Nix (CI):**
-```bash
-nix build .                    # Node server + Docker image
-nix build .#cloudflare-worker  # Cloudflare Worker artifact
 ```
 
 ## Project Structure
@@ -58,7 +51,7 @@ src/
   hooks/          # Custom React hooks
   lib/            # Shared libraries (version, etc.)
   redux/          # Redux store and slices
-  server/         # Server-side code (DB, API routes)
+  server/         # Server-side code (API routes)
 scripts/          # Build and release scripts
 ```
 
@@ -67,7 +60,7 @@ scripts/          # Build and release scripts
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Metro dev server with Dream Mode |
-| `npm run build` | Release build for Node.js / Docker |
+| `npm run build` | Release build for Node.js |
 | `npm run build:worker` | Release build for Cloudflare Workers |
 | `npm run version` | Print current version (from git tag or commit hash) |
 | `npm run tag` | Create a CalVer signed git tag |
@@ -84,7 +77,7 @@ All project-wide config lives in `.env`:
 
 | Variable | Purpose |
 |----------|---------|
-| `PROJECT_NAME` | Used across Nix, Expo, CI, and Cloudflare Workers |
+| `PROJECT_NAME` | Used across Expo, CI, and Cloudflare Workers |
 | `BACKEND_LISTEN_PORT` | Express server port |
 | `BACKEND_LISTEN_HOSTNAME` | Express server bind address |
 | `ANTHROPIC_API_KEY` | Required for Dream Mode (Claude Code) |
@@ -92,6 +85,4 @@ All project-wide config lives in `.env`:
 
 ## Deployment
 
-- **Cloudflare Workers**: Triggered by git tag push via GitHub Actions
-- **Docker**: Built by Nix, pushed to GHCR with s6 process supervision
-- **Native**: Build with `eas build` (Expo Application Services)
+- **Cloudflare Workers**: Deployed automatically via GitHub Actions on push to any branch. Main branch deploys as the production worker; feature branches get preview workers that are cleaned up on branch deletion.
