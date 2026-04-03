@@ -19,14 +19,11 @@ const cwd = process.cwd();
 const git = (...args: string[]) => exec("git", args, { cwd });
 const gitIn = (dir: string, ...args: string[]) => exec("git", args, { cwd: dir });
 
-// ── SQLite state (persists across hot-reloads) ─────────────────
+// ── SQLite state — routes are stateless so this runs on every request.
+// Only idempotent operations here (CREATE IF NOT EXISTS, ALTER ADD COLUMN).
 const db = new Database("/tmp/dream-state.db");
 db.exec(readFileSync(join(cwd, "src/app/api/database.sql"), "utf-8"));
 try { db.exec("ALTER TABLE jobs ADD COLUMN finished_at INTEGER"); } catch { /* already exists */ }
-db.exec(`
-	UPDATE jobs SET status = 'error', error = 'Server restarted', finished_at = unixepoch()
-	WHERE status IN ('running', 'accepting') AND finished_at IS NULL
-`);
 
 // ── DB helpers ─────────────────────────────────────────────────
 type Row = Record<string, unknown>;
@@ -93,6 +90,24 @@ export async function POST(req: Request): Promise<Response> {
 	}
 
 	const { prompt, screenshot, pollJobId, action, commitHash, jobId: actionJobId } = await req.json();
+
+	// ── List all jobs (running + past) ─────────────────────────
+	if (action === "listJobs") {
+		const rows = db.prepare(
+			"SELECT id, status, summary, has_changes, preview_url, error, created_at, finished_at FROM jobs ORDER BY created_at DESC LIMIT 50"
+		).all() as Record<string, unknown>[];
+		const jobs = rows.map((r) => ({
+			id: r.id,
+			status: r.status,
+			summary: r.summary,
+			hasChanges: r.has_changes === 1,
+			previewUrl: r.preview_url,
+			error: r.error,
+			createdAt: r.created_at,
+			finishedAt: r.finished_at,
+		}));
+		return Response.json({ jobs });
+	}
 
 	// ── List recent dream commits ──────────────────────────────
 	if (action === "listCommits") {

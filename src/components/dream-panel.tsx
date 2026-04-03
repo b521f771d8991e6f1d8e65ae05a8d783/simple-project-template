@@ -213,7 +213,27 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		setPendingPreview(null);
 	};
 
-	// Commit history
+	// Job history
+	interface Job {
+		id: string;
+		status: string;
+		summary?: string;
+		hasChanges?: boolean;
+		previewUrl?: string;
+		error?: string;
+		createdAt: number;
+		finishedAt?: number;
+	}
+	const [jobs, setJobs] = useState<Job[]>([]);
+	const [showJobs, setShowJobs] = useState(false);
+
+	const loadJobs = async () => {
+		const data = await dreamFetch({ action: "listJobs" });
+		setJobs(data.jobs ?? []);
+		setShowJobs(true);
+	};
+
+	// Commit history (for reverts)
 	interface Commit { hash: string; message: string; ago: string }
 	const [commits, setCommits] = useState<Commit[]>([]);
 	const [showCommits, setShowCommits] = useState(false);
@@ -222,6 +242,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		const data = await dreamFetch({ action: "listCommits" });
 		setCommits(data.commits ?? []);
 		setShowCommits(true);
+		setShowJobs(false);
 	};
 
 	const revertCommit = async (hash: string) => {
@@ -245,6 +266,15 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		}
 	};
 
+	const formatTime = (epoch: number) => new Date(epoch * 1000).toLocaleTimeString();
+	const statusColor = (s: string) => {
+		if (s === "running" || s === "accepting") return "#f59e0b";
+		if (s === "preview") return "#3b82f6";
+		if (s === "done") return "#22c55e";
+		if (s === "error") return "#ef4444";
+		return c.textSecondary;
+	};
+
 	if (!visible) return null;
 
 	return (
@@ -256,10 +286,15 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				<View style={[styles.header, { borderBottomColor: c.border, cursor: "grab" } as any]} {...panResponder.panHandlers}>
 					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
 					<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-						<Pressable onPress={() => { if (showCommits) { setShowCommits(false); } else { loadCommits(); } }} hitSlop={8}>
-							<Text style={{ color: showCommits ? c.accent : c.textSecondary, fontSize: 12 }}>{showCommits ? "Chat" : "History"}</Text>
+						<Pressable onPress={() => {
+							if (showJobs || showCommits) { setShowJobs(false); setShowCommits(false); }
+							else { loadJobs(); }
+						}} hitSlop={8}>
+							<Text style={{ color: (showJobs || showCommits) ? c.accent : c.textSecondary, fontSize: 12 }}>
+								{showJobs || showCommits ? "Chat" : "Jobs"}
+							</Text>
 						</Pressable>
-						{messages.length > 0 && !showCommits && (
+						{!showJobs && !showCommits && messages.length > 0 && (
 							<Pressable onPress={handleClear} hitSlop={8}>
 								<Text style={{ color: c.textSecondary, fontSize: 12 }}>Clear</Text>
 							</Pressable>
@@ -270,9 +305,44 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					</View>
 				</View>
 
+				{/* Jobs view */}
+				{showJobs && !showCommits && (
+					<ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
+						{jobs.length === 0 && (
+							<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
+								No jobs yet.
+							</Text>
+						)}
+						{jobs.map((job) => (
+							<View key={job.id} style={[styles.commitRow, { borderBottomColor: c.border }]}>
+								<View style={{ flex: 1, gap: 2 }}>
+									<View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+										<View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: statusColor(job.status) }} />
+										<Text style={{ color: c.text, fontSize: 12, fontWeight: "500" }}>{job.status}</Text>
+									</View>
+									<Text style={{ color: c.text, fontSize: 12 }} numberOfLines={2}>
+										{job.summary ?? job.error ?? job.id}
+									</Text>
+									<Text style={{ color: c.textSecondary, fontSize: 10 }}>
+										{formatTime(job.createdAt)}{job.finishedAt ? ` — ${formatTime(job.finishedAt)}` : ""}
+									</Text>
+								</View>
+								{job.status === "preview" && job.previewUrl && (
+									<Pressable onPress={() => Linking.openURL(job.previewUrl!)} style={styles.revertBtn}>
+										<Text style={{ color: c.accent, fontSize: 11, fontWeight: "500" }}>Preview</Text>
+									</Pressable>
+								)}
+							</View>
+						))}
+					</ScrollView>
+				)}
+
 				{/* Commit history view */}
 				{showCommits && (
 					<ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
+						<Pressable onPress={() => { setShowCommits(false); loadJobs(); }} style={{ alignSelf: "flex-start", marginBottom: 4 }}>
+							<Text style={{ color: c.accent, fontSize: 11 }}>← Jobs</Text>
+						</Pressable>
 						{commits.length === 0 && (
 							<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
 								No dream commits yet.
@@ -297,7 +367,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				)}
 
 				{/* Messages */}
-				{!showCommits && <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
+				{!showCommits && !showJobs && <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
 					{initialized && messages.length === 0 && !pendingPreview && (
 						<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
 							{t("dream.empty")}
