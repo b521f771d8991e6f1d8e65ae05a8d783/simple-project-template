@@ -8,7 +8,7 @@
 #
 # Jobs:
 #   rapid-deploy    — 📱 Expo web + ☁️ Cloudflare Workers deploy
-#   cleanup-preview — 🧹 deletes preview workers when a branch is deleted
+#                     main → production deploy, other branches → preview version
 #
 # Secrets required:
 #   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
@@ -17,14 +17,12 @@ name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
-    branches-ignore: [beta, stable]
+    branches-ignore: [main, dev, beta]
   pull_request:
-    branches-ignore: [beta, stable]
-  delete:
+    branches-ignore: [main, dev, beta]
 
 jobs:
   rapid-deploy:
-    if: github.event_name != 'delete'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,14 +48,16 @@ jobs:
       - name: Build & deploy 🏗️🚀
         run: |
           source .env
-          # Deploy — wrangler runs build:cloudflare-worker, then bundles src/worker.ts
           if [ "${{ github.event_name }}" = "push" ]; then
             if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-              WORKER_NAME="${PROJECT_NAME}"
+              # Production: deploy to live traffic
+              npx wrangler deploy --name "$PROJECT_NAME"
             else
-              WORKER_NAME="${PROJECT_NAME}-$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)"
+              # Preview: upload version with branch alias (no production traffic)
+              npx wrangler versions upload --name "$PROJECT_NAME" \
+                --tag "${{ github.ref_name }}" \
+                --message "Branch: ${{ github.ref_name }}"
             fi
-            npx wrangler deploy --name "$WORKER_NAME"
           fi
         env:
           TMPDIR: /tmp
@@ -72,15 +72,3 @@ jobs:
           path: dist/
           if-no-files-found: error
 
-  cleanup-preview:
-    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@main
-      - name: Delete preview worker 🧹
-        run: |
-          source .env
-          BRANCH=$(echo "${{ github.event.ref }}" | sed 's/[^a-zA-Z0-9-]/-/g' | cut -c1-53)
-          curl -s -X DELETE \
-            "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts/${PROJECT_NAME}-${BRANCH}" \
-            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}"

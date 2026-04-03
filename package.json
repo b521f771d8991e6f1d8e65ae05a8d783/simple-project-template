@@ -1,23 +1,21 @@
 {
   "main": "expo-router/entry",
   "scripts": {
-    "compile:web": "expo export --platform web",
+    "compile:web": "EXPO_NO_TELEMETRY=1 node node_modules/.bin/expo export --platform web",
     "compile:server": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify --define:__APP_VERSION__=\\\"$(npx tsx scripts/version.ts)\\\"",
     "compile:server:dev": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --sourcemap --define:__APP_VERSION__=\\\"$(npx tsx scripts/version.ts)\\\"",
     "compile:worker": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --minify --format=esm --external:node:* --define:__APP_VERSION__=\\\"$(npx tsx scripts/version.ts)\\\"",
     "compile:worker:dev": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --sourcemap --format=esm --external:node:* --define:__APP_VERSION__=\\\"$(npx tsx scripts/version.ts)\\\"",
     "build:node": "npm run compile:web && npm run compile:server",
     "build:node:dev": "npm run compile:web && npm run compile:server:dev",
-    "build:cloudflare-worker": "EXPO_NO_TELEMETRY=1 npm run compile:web && npm run compile:worker",
-    "build:cloudflare-worker:dev": "EXPO_NO_TELEMETRY=1 npm run compile:web && npm run compile:worker:dev",
+    "build:cloudflare-worker": "npm run compile:web && npm run compile:worker",
+    "build:cloudflare-worker:dev": "npm run compile:web && npm run compile:worker:dev",
     "dev": "APP_MODE=develop expo start --web",
-    "build": "NODE_ENV=production npm run build:node",
-    "build:worker": "NODE_ENV=production npm run build:cloudflare-worker",
     "lint": "expo lint",
-    "version": "npx tsx scripts/version.ts",
-    "tag": "npx tsx scripts/tag.ts",
-    "tag:push": "npx tsx scripts/tag.ts --push",
-    "generate:icons": "npx tsx scripts/generate-icons.ts"
+    "version": "tsx scripts/version.ts",
+    "tag": "tsx scripts/tag.ts",
+    "tag:push": "tsx scripts/tag.ts --push",
+    "generate:icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^2.1.91",
@@ -34,7 +32,6 @@
     "@types/morgan": "^1.9.10",
     "@types/react": "~19.1.17",
     "compression": "^1.8.1",
-    "electron": "^41.1.1",
     "esbuild": "^0.27.7",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~10.0.0",
