@@ -85,4 +85,13 @@ All project-wide config lives in `.env`:
 
 ## Deployment
 
-- **Cloudflare Workers**: Deployed automatically via GitHub Actions on push to any branch. Main branch deploys as the production worker; feature branches get preview workers that are cleaned up on branch deletion.
+Cloudflare Workers are deployed automatically via GitHub Actions on push to any branch. Main branch deploys as the production worker; feature branches get preview workers that are cleaned up on branch deletion.
+
+### Required GitHub Secrets
+
+| Secret | Description | How to get it |
+|--------|-------------|---------------|
+| `CLOUDFLARE_API_TOKEN` | API token with **Workers Scripts:Edit** permission | Cloudflare dashboard → My Profile → API Tokens → Create Token → use the "Edit Cloudflare Workers" template |
+| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID | Cloudflare dashboard → any domain → Overview → right sidebar under "API", or the hex string in your dashboard URL: `dash.cloudflare.com/<account-id>` |
+
+Set these in your GitHub repository under Settings → Secrets and variables → Actions → New repository secret.
