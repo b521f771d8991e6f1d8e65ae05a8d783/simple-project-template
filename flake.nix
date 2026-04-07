@@ -57,17 +57,9 @@
             match = builtins.match ".*PROJECT_NAME=([^\n]+).*" envFile;
           in if match != null then builtins.head match else "simple-project-template";
 
-          muslTarget = if system == "aarch64-linux" || system == "aarch64-darwin"
-            then "aarch64-unknown-linux-musl"
-            else "x86_64-unknown-linux-musl";
-
-          # Rust toolchain with musl and wasm targets
+          # Rust toolchain with wasm target
           rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-            targets = [
-              "x86_64-unknown-linux-musl"
-              "aarch64-unknown-linux-musl"
-              "wasm32-unknown-unknown"
-            ];
+            targets = [ "wasm32-unknown-unknown" ];
           };
 
           rustPlatform = pkgs.makeRustPlatform {
@@ -134,6 +126,7 @@
               EXPO_NO_TELEMETRY = 1;
               OBJC = "${pkgs.clang}/bin/clang";
               OBJCXX = "${pkgs.clang}/bin/clang++";
+              PROJECT_NAME = projectName;
             };
 
             buildPhase = ''
@@ -147,7 +140,7 @@ directory = "${cargoVendorDir}"
 EOF
 
               echo "${version}" > VERSION
-              npm run build:node
+              npm run build:web
             '';
 
             installPhase = ''
