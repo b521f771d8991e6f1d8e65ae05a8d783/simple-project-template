@@ -13,7 +13,7 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
+        os: [ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -42,16 +42,11 @@ jobs:
 
       - name: Build and test Nix Flake
         run: |
-          nix --extra-experimental-features "flakes nix-command" flake check -L --show-trace
+          nix flake check -L --show-trace
           mkdir ${{ runner.temp }}/result
-          nix --extra-experimental-features "flakes nix-command" copy --no-check-sigs \
+          nix copy --no-check-sigs \
             .#default \
             --to ${{ runner.temp }}/result
-          if [ "$(uname)" = "Linux" ]; then
-            nix --extra-experimental-features "flakes nix-command" copy --no-check-sigs \
-              .#docker \
-              --to ${{ runner.temp }}/result
-          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -66,7 +61,7 @@ jobs:
           REGISTRY: ghcr.io
           IMAGE_NAME: ${{ github.repository }}
         run: |
-          nix --extra-experimental-features "flakes nix-command" build .#docker
+          nix build .#docker
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           IMAGE_TAG="${GITHUB_SHA::8}"
           docker load < "$(readlink -f result)"
@@ -79,7 +74,7 @@ jobs:
         if: github.event_name == 'push' && runner.os == 'Linux' && runner.arch == 'X64'
         run: |
           source .env
-          nix --extra-experimental-features "flakes nix-command" build -L .#default
+          nix build -L .#default
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             npx wrangler deploy --name "$PROJECT_NAME"
           else

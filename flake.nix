@@ -138,6 +138,7 @@
 
             buildInputs = with pkgs; [
               boost
+            ] ++ lib.optionals stdenv.isLinux [
               gnustep-base
             ];
 
@@ -182,6 +183,7 @@
 
             nativeBuildInputs = with pkgs; default.nativeBuildInputs ++ [
               cargo-tauri
+              makeWrapper
             ] ++ lib.optionals stdenv.isLinux [ wrapGAppsHook3 ];
 
             buildInputs = with pkgs; default.buildInputs ++ lib.optionals stdenv.isLinux [
@@ -222,9 +224,12 @@
             '';
 
             installPhase = ''
-              mkdir -p $out/bin
-              cp target/release/tauri-app $out/bin/
-              cp -r dist $out/
+              mkdir -p $out/app/dist/binaries $out/bin
+              cp target/release/tauri-app $out/app/
+              cp dist/binaries/server-* $out/app/dist/binaries/
+              cp -r dist/server $out/app/dist/server
+              makeWrapper $out/app/tauri-app $out/bin/tauri-app \
+                --run "cd '$out/app'"
             '';
 
             meta.mainProgram = projectName;
