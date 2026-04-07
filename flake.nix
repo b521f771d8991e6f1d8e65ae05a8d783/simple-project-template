@@ -92,8 +92,8 @@
 
             extraCommands = ''
               mkdir -p app
-              cp -r --no-preserve=mode ${./.}/* app/
-              cp -r --no-preserve=mode ${default.dream}/node_modules app/node_modules
+              cp -r ${./.}/* app/
+              cp -r ${default.dream}/node_modules app/node_modules
             '';
             
             config = {
