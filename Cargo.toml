@@ -5,7 +5,7 @@ edition = "2024"
 default-run = "tauri-app"
 
 [features]
-tauri-app = ["dep:napi", "dep:napi-derive", "dep:tauri", "dep:tauri-plugin-shell", "dep:tauri-build"]
+tauri-app = ["dep:napi", "dep:napi-derive", "dep:tauri", "dep:tauri-plugin-shell", "dep:tauri-build", "dep:rust-embed"]
 
 [dependencies]
 wasm-bindgen = "=0.2.114"
@@ -13,6 +13,7 @@ napi = { version = "2", features = ["napi4"], optional = true }
 napi-derive = { version = "2", optional = true }
 tauri = { version = "2", features = [], optional = true }
 tauri-plugin-shell = { version = "2", optional = true }
+rust-embed = { version = "8", optional = true }
 
 [build-dependencies]
 napi-build = "2"

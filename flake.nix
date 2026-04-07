@@ -214,9 +214,8 @@
             '';
 
             installPhase = ''
-              mkdir -p $out/bin/dist/binaries
+              mkdir -p $out/bin
               cp target/release/tauri-app $out/bin/
-              cp dist/binaries/server-* $out/bin/dist/binaries/
             '';
 
             meta.mainProgram = projectName;

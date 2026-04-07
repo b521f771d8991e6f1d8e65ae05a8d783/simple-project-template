@@ -11,9 +11,6 @@
     "targets": "all",
     "icon": [
       "src/assets/images/icon.png"
-    ],
-    "externalBin": [
-      "dist/binaries/server"
     ]
   },
   "mainBinaryName": "tauri-app",
