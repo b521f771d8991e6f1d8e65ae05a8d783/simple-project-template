@@ -5,7 +5,7 @@ interface LogoProps {
 	color?: string;
 }
 
-const logoSource = require("../../logo.svg");
+const logoSource = require("../assets/images/icon.png");
 
 export function Logo({ size = 28, color }: LogoProps) {
 	return (

@@ -100,7 +100,6 @@ src-native/
   test.h          # C header
   test.mm         # ObjC++ implementation
   test.test.c++   # Boost.Test unit tests
-src-tauri/        # Tauri icons and resources
 scripts/          # Build and release scripts
 tauri.conf.json   # Tauri app configuration
 sea-config.json   # Node.js SEA configuration

@@ -25,8 +25,8 @@ path = "src-rust/lib.rs"
 panic = "abort"
 
 [[bin]]
-name = "hello_world"
-path = "src-rust/bin/hello_world/bin.rs"
+name = "hello-world"
+path = "src-rust/bin/hello-world/bin.rs"
 
 [[bin]]
 name = "tauri-app"

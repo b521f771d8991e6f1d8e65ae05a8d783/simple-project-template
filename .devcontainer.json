@@ -14,9 +14,7 @@
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/devcontainers/features/node:1": {},
         "ghcr.io/devcontainers/features/rust:1": {},
-        "ghcr.io/devcontainers/features/nix:1": {},
-        "ghcr.io/devcontainers-community/features/llvm:3": {},
-        "ghcr.io/ebaskoro/devcontainer-features/emscripten:1": {}
+        "ghcr.io/devcontainers/features/nix:1": {}
     },
     "customizations": {
         "vscode": {

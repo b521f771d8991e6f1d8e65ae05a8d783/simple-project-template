@@ -224,7 +224,7 @@
 
             installPhase = ''
               mkdir -p $out/bin
-              cp target/release/${projectName} $out/bin/
+              cp target/release/tauri-app $out/bin/
               cp -r dist $out/
             '';
 
