@@ -46,15 +46,15 @@
               npm run build:node
             '';
 
-            outputs = [ "out" "dream" ];
+            outputs = [ "out" "deps" ];
 
             installPhase = ''
               mkdir -p $out/bin
               cp -r dist/* $out/bin/
 
-              # Copy installed node_modules for docker-dream
-              mkdir -p $dream
-              cp -r node_modules $dream/node_modules
+              # Copy installed node_modules for docker-dev
+              mkdir -p $deps
+              cp -r node_modules $deps/node_modules
             '';
 
             meta.mainProgram = "main.js";
@@ -79,9 +79,9 @@
             };
           };
 
-          # Dream Mode Docker image — full source + node_modules for live development
-          docker-dream = pkgs.dockerTools.buildLayeredImage {
-            name = "${projectName}-dream";
+          # Dev Docker image — full source + node_modules for live development
+          docker-dev = pkgs.dockerTools.buildLayeredImage {
+            name = "${projectName}-dev";
             tag = version;
             
             contents = [
@@ -93,7 +93,7 @@
             extraCommands = ''
               mkdir -p app
               cp -r ${./.}/* app/
-              cp -r ${default.dream}/node_modules app/node_modules
+              cp -r ${default.deps}/node_modules app/node_modules
             '';
             
             config = {
