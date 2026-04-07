@@ -57,13 +57,20 @@
             match = builtins.match ".*PROJECT_NAME=([^\n]+).*" envFile;
           in if match != null then builtins.head match else "simple-project-template";
 
-          # Rust toolchain with wasm target
+          # Rust toolchain with wasm, native, iOS and Android targets
           rustToolchain = pkgs.rust-bin.stable.latest.default.override {
             targets = [
+              # Wasm
               "wasm32-unknown-unknown"
+              # Native
               "x86_64-unknown-linux-gnu"
               "aarch64-unknown-linux-gnu"
               "aarch64-apple-darwin"
+              # iOS
+              "aarch64-apple-ios"
+              "aarch64-apple-ios-sim"
+              # Android
+              "aarch64-linux-android"
             ];
           };
 
@@ -113,19 +120,20 @@
 
             nativeBuildInputs = with pkgs; [
               git
+              pkg-config
 
               # Objective C/++ Toolchain
               clang
               emscripten
               cmake
               ninja
-              gnustep-base
 
               # Rust toolchain with musl + wasm targets
               rustToolchain
               wasm-bindgen-cli_0_2_114
               wasm-pack
               binaryen
+              clippy
             ];
 
             buildInputs = with pkgs; [
@@ -174,12 +182,10 @@
 
             nativeBuildInputs = with pkgs; default.nativeBuildInputs ++ [
               cargo-tauri
+              appimage-run
             ] ++ lib.optionals stdenv.isLinux [ wrapGAppsHook3 ];
 
-            buildInputs = with pkgs; [
-              boost
-              gnustep-base
-            ] ++ lib.optionals stdenv.isLinux [
+            buildInputs = with pkgs; default.buildInputs ++ lib.optionals stdenv.isLinux [
               webkitgtk_4_1
               gtk3
               libsoup_3
