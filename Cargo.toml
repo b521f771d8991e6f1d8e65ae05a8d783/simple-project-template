@@ -1,0 +1,13 @@
+[package]
+name = "simple-project-template"
+edition = "2024"
+
+[dependencies]
+wasm-bindgen = "=0.2.115"
+
+[lib]
+path = "src-rust/lib.rs"
+
+[[bin]]
+name = "hello_world"
+path = "src-rust/bin/hello_world/bin.rs"
