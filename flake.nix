@@ -180,6 +180,9 @@
 
             nativeBuildInputs = with pkgs; default.nativeBuildInputs ++ [
               cargo-tauri
+            ] ++ lib.optionals stdenv.isLinux [
+              wrapGAppsHook3
+              gobject-introspection
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
               apple-sdk
             ]);
@@ -194,6 +197,8 @@
               gdk-pixbuf
               atk
               openssl
+              gsettings-desktop-schemas
+              glib-networking
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
               WebKit
               AppKit
