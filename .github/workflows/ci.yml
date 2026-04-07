@@ -27,16 +27,12 @@ jobs:
             echo "present=false" >> $GITHUB_OUTPUT
           fi
 
-      - uses: DeterminateSystems/flake-checker-action@v12
-        with:
-          fail-mode: false
-
-      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: DeterminateSystems/nix-installer-action@v22
         if: steps.check_nix.outputs.present == 'false'
         with:
           flakehub: false
 
-      - uses: DeterminateSystems/magic-nix-cache-action@v7
+      - uses: DeterminateSystems/magic-nix-cache-action@v13
         with:
           use-flakehub: false
 
