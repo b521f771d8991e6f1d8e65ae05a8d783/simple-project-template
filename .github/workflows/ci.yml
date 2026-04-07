@@ -18,6 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - run: sudo mkdir -p /nix/store
+
       - uses: actions/cache@v4
         with:
           path: /nix/store
