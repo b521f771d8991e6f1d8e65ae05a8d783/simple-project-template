@@ -178,18 +178,18 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const handleAccept = async () => {
 		if (!pendingPreview) return;
 		setLoading(true);
-		setStatus("Applying changes...");
+		setStatus("Sending to developer...");
 		const { jobId, summary } = pendingPreview;
 		setPendingPreview(null);
 		try {
 			const res = await dreamFetch({ action: "accept", jobId });
 			if (res.error) throw new Error(res.error);
-			const finalText = (res.summary ?? summary ?? "Changes applied.").replace(/\n{3,}/g, "\n\n").trim();
+			const finalText = (res.summary ?? summary ?? "Suggestion sent.").replace(/\n{3,}/g, "\n\n").trim();
 			const msg: DreamMessage = { role: "assistant", content: finalText, hasChanges: true };
 			const id = await saveMessage({ ...msg, sessionId: sessionId ?? undefined }).catch(() => undefined);
 			setMessages((prev) => [...prev, { ...msg, id }]);
 		} catch (err) {
-			const msg: DreamMessage = { role: "assistant", content: `Accept failed: ${err instanceof Error ? err.message : "unknown"}` };
+			const msg: DreamMessage = { role: "assistant", content: `Failed to send: ${err instanceof Error ? err.message : "unknown"}` };
 			const id = await saveMessage(msg).catch(() => undefined);
 			setMessages((prev) => [...prev, { ...msg, id }]);
 		} finally {
@@ -215,39 +215,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		setPendingPreview(null);
 	};
 
-	// Commit history
-	interface Commit { hash: string; message: string; ago: string }
-	const [commits, setCommits] = useState<Commit[]>([]);
-	const [showCommits, setShowCommits] = useState(false);
-
-	const loadCommits = async () => {
-		const data = await dreamFetch({ action: "listCommits" });
-		setCommits(data.commits ?? []);
-		setShowCommits(true);
-	};
-
-	const revertCommit = async (hash: string) => {
-		setLoading(true);
-		setStatus("Reverting...");
-		try {
-			const data = await dreamFetch({ action: "revert", commitHash: hash });
-			if (data.error) throw new Error(data.error);
-			const msg: DreamMessage = { role: "assistant", content: data.summary };
-			const id = await saveMessage(msg).catch(() => undefined);
-			setMessages((prev) => [...prev, { ...msg, id }]);
-			setShowCommits(false);
-			loadCommits();
-		} catch (err) {
-			const msg: DreamMessage = { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "unknown"}` };
-			const id = await saveMessage(msg).catch(() => undefined);
-			setMessages((prev) => [...prev, { ...msg, id }]);
-		} finally {
-			setLoading(false);
-			setStatus(null);
-		}
-	};
-
-
 	if (!visible) return null;
 
 	return (
@@ -259,10 +226,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				<View style={[styles.header, { borderBottomColor: c.border, cursor: "grab" } as any]} {...panResponder.panHandlers}>
 					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
 					<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-						<Pressable onPress={() => { if (showCommits) { setShowCommits(false); } else { loadCommits(); } }} hitSlop={8}>
-							<Text style={{ color: showCommits ? c.accent : c.textSecondary, fontSize: 12 }}>{showCommits ? "Chat" : "History"}</Text>
-						</Pressable>
-						{!showCommits && messages.length > 0 && (
+						{messages.length > 0 && (
 							<Pressable onPress={handleClear} hitSlop={8}>
 								<Text style={{ color: c.textSecondary, fontSize: 12 }}>Clear</Text>
 							</Pressable>
@@ -273,34 +237,8 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					</View>
 				</View>
 
-				{/* Commit history view */}
-				{showCommits && (
-					<ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
-						{commits.length === 0 && (
-							<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
-								No dream commits yet.
-							</Text>
-						)}
-						{commits.map((commit) => (
-							<View key={commit.hash} style={[styles.commitRow, { borderBottomColor: c.border }]}>
-								<View style={{ flex: 1, gap: 2 }}>
-									<Text style={{ color: c.text, fontSize: 13 }} numberOfLines={1}>{commit.message}</Text>
-									<Text style={{ color: c.textSecondary, fontSize: 11 }}>{commit.hash.slice(0, 8)} · {commit.ago}</Text>
-								</View>
-								<Pressable
-									onPress={() => revertCommit(commit.hash)}
-									disabled={loading}
-									style={[styles.revertBtn, { opacity: loading ? 0.4 : 1 }]}
-								>
-									<Text style={{ color: "#ef4444", fontSize: 12, fontWeight: "500" }}>Revert</Text>
-								</Pressable>
-							</View>
-						))}
-					</ScrollView>
-				)}
-
 				{/* Messages */}
-				{!showCommits && <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
+				<ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
 					{initialized && messages.length === 0 && !pendingPreview && (
 						<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
 							{t("dream.empty")}
@@ -347,7 +285,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 									<Text style={styles.decisionBtnText}>Show Preview</Text>
 								</Pressable>
 								<Pressable onPress={handleAccept} style={[styles.decisionBtn, { backgroundColor: "#22c55e" }]}>
-									<Text style={styles.decisionBtnText}>Accept</Text>
+									<Text style={styles.decisionBtnText}>Send to Developer</Text>
 								</Pressable>
 								<Pressable onPress={handleDecline} style={[styles.decisionBtn, { backgroundColor: isDark ? "#3a3a3a" : "#e5e7eb" }]}>
 									<Text style={[styles.decisionBtnText, { color: c.text }]}>Decline</Text>
@@ -366,7 +304,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 							)}
 						</View>
 					)}
-				</ScrollView>}
+				</ScrollView>
 
 				{/* Input */}
 				<View style={[styles.inputRow, { borderTopColor: c.border }]}>
@@ -409,7 +347,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					overlay={false}
 					zIndex={60}
 					actions={[
-						{ label: "Accept", onClick: () => { setShowPreviewPopup(false); handleAccept(); } },
+						{ label: "Send to Developer", onClick: () => { setShowPreviewPopup(false); handleAccept(); } },
 						{ label: "Decline", onClick: () => { setShowPreviewPopup(false); handleDecline(); } },
 					]}
 				>
@@ -507,16 +445,5 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		paddingHorizontal: 14,
 		paddingVertical: 8,
-	},
-	commitRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingVertical: 10,
-		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: 10,
-	},
-	revertBtn: {
-		paddingHorizontal: 10,
-		paddingVertical: 4,
 	},
 });

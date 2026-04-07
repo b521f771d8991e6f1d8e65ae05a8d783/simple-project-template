@@ -7,6 +7,7 @@ Applications based on this template have two modes: **develop** and **build**.
 | Mode | Command | Who | What |
 |------|---------|-----|------|
 | **Develop** | `npm run dev` | Developers | VS Code + Metro dev server with Dream Mode (Claude Code AI). |
+| **Dream** | Docker dev image | End users | Users suggest changes via AI chat. Changes are previewed, then emailed as a patch to the developer. |
 | **Build** | `npm run build` | CI / release | Production release builds. Minified output for deployment. |
 
 ## Quick Start
@@ -18,13 +19,32 @@ npm run dev          # start developing
 
 ## Develop
 
-Local development with Metro hot-reload. Edit files in VS Code, changes appear instantly. Includes **Dream Mode** — click the Dream button in the nav bar to modify the app via Claude Code AI.
+Local development with Metro hot-reload. Edit files in VS Code, changes appear instantly.
 
 ```bash
 npm run dev
 ```
 
-To use Dream Mode, set `ANTHROPIC_API_KEY` in `.env` or log in via `claude login`. Dream Mode respects `AGENTS.md` and `.do-not-edit` — all changes are committed via git and can be kept or discarded from the UI.
+### Dream Mode
+
+Dream Mode lets end users suggest changes to the app via an AI chat panel. The user describes what they want, Claude Code generates the changes, and a live preview is shown. When the user clicks "Send to Developer", the diff is compressed with xz and emailed to the developer — **no changes are applied to the running app**.
+
+To use Dream Mode, configure these environment variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `DEVELOPER_EMAIL` | Email address that receives suggested diffs |
+| `SMTP_URL` | SMTP connection string (e.g. `smtp://user:pass@host:587`) |
+| `ANTHROPIC_API_KEY` | Required for Claude Code |
+| `DREAM_MODEL` | Optional model override (e.g. `sonnet`, `opus`) |
+
+To apply a received patch:
+
+```bash
+xzcat dream.patch.xz | git apply
+```
+
+Dream Mode respects `AGENTS.md`.
 
 ## Build
 
@@ -80,6 +100,8 @@ All project-wide config lives in `.env`:
 | `PROJECT_NAME` | Used across Expo, CI, and Cloudflare Workers |
 | `BACKEND_LISTEN_PORT` | Express server port |
 | `BACKEND_LISTEN_HOSTNAME` | Express server bind address |
+| `DEVELOPER_EMAIL` | Email address for Dream Mode patch notifications |
+| `SMTP_URL` | SMTP connection string for Dream Mode emails |
 | `ANTHROPIC_API_KEY` | Required for Dream Mode (Claude Code) |
 | `DREAM_MODEL` | Optional model override (e.g. `sonnet`, `opus`) |
 

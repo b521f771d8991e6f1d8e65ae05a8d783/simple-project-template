@@ -88,17 +88,20 @@
               pkgs.busybox
               pkgs.nix
               pkgs.gh
-            ] ++ default.nativeBuildInputs;
+              pkgs.nodejs
+            ] ++ default.nativeBuildInputs ++ default.buildInputs;
 
             extraCommands = ''
               mkdir -p app
-              cp -r ${./.}/* app/
+              cp -rT ${./.} app/
               cp -r ${default.deps}/node_modules app/node_modules
+              ${pkgs.git}/bin/git init app
+              cd app && ${pkgs.git}/bin/git add -A && ${pkgs.git}/bin/git -c user.name=nix -c user.email=nix commit -m "init" --quiet
             '';
             
             config = {
-              Cmd = [ "${pkgs.nodejs}/bin/npm" "run" "dev" ];
-              Env = [ "APP_MODE=develop" ];
+              Cmd = [ "npm" "run" "dev" ];
+              Env = [ "APP_MODE=develop" "EXPO_OFFLINE=1" "BROWSER=none" ];
               WorkingDir = "/app";
               ExposedPorts = { "8081/tcp" = {}; };
               Volumes = { "/data" = {}; };
