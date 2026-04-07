@@ -18,25 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check for nix
-        id: check_nix
-        run: |
-          if command -v nix >/dev/null 2>&1; then
-            echo "present=true" >> $GITHUB_OUTPUT
-          else
-            echo "present=false" >> $GITHUB_OUTPUT
-          fi
-
-      - uses: DeterminateSystems/nix-installer-action@v22
-        if: steps.check_nix.outputs.present == 'false'
-        with:
-          flakehub: false
-
       - uses: actions/cache@v4
         with:
           path: /nix/store
           key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-keys: nix-${{ runner.os }}-
+
+      - uses: nixbuild/nix-quick-install-action@v34
 
       - name: Build and test Nix Flake
         run: |
@@ -53,20 +41,20 @@ jobs:
           path: ${{ runner.temp }}/result
           if-no-files-found: error
 
-      - name: Push Docker image to GHCR
-        if: runner.os == 'Linux' && runner.arch == 'X64'
-        env:
-          REGISTRY: ghcr.io
-          IMAGE_NAME: ${{ github.repository }}
-        run: |
-          nix build .#docker
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          IMAGE_TAG="${GITHUB_SHA::8}"
-          docker load < "$(readlink -f result)"
-          docker tag "${IMAGE_NAME}:latest" "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-          docker tag "${IMAGE_NAME}:latest" "${REGISTRY}/${IMAGE_NAME}:latest"
-          docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-          docker push "${REGISTRY}/${IMAGE_NAME}:latest"
+      #- name: Push Docker image to GHCR
+      #  if: runner.os == 'Linux' && runner.arch == 'X64'
+      #  env:
+      #    REGISTRY: ghcr.io
+      #    IMAGE_NAME: ${{ github.repository }}
+      #  run: |
+      #    nix build .#docker
+      #    echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      #    IMAGE_TAG="${GITHUB_SHA::8}"
+      #    docker load < "$(readlink -f result)"
+      #    docker tag "${IMAGE_NAME}:latest" "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+      #    docker tag "${IMAGE_NAME}:latest" "${REGISTRY}/${IMAGE_NAME}:latest"
+      #    docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+      #    docker push "${REGISTRY}/${IMAGE_NAME}:latest"
 
       - name: Deploy to Cloudflare 🚀
         if: github.event_name == 'push' && runner.os == 'Linux' && runner.arch == 'X64'
