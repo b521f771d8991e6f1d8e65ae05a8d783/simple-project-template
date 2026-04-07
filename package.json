@@ -4,12 +4,13 @@
     "compile:web": "EXPO_NO_TELEMETRY=1 node node_modules/.bin/expo export --platform web",
     "compile:server": "esbuild src/server.ts --outfile=./dist/main.js --platform=node --bundle --minify --define:__APP_VERSION__=\\\"$(npx tsx scripts/version.ts)\\\"",
     "compile:worker": "esbuild src/worker.ts --outfile=./dist/worker.js --platform=browser --bundle --minify --format=esm --external:node:* --define:__APP_VERSION__=\\\"$(npx tsx scripts/version.ts)\\\"",
-    "compile:native:wasm": "emcmake cmake --preset release -B .cmake-wasm -S . && cmake --build .cmake-wasm && mkdir dist && cp -a .cmake-wasm/*.a dist",
+    "compile:native:wasm": "emcmake cmake --preset release -B .cmake-wasm -S . && cmake --build .cmake-wasm && mkdir -p dist && cp -a .cmake-wasm/*.a dist",
     "compile:native:native": "cmake --preset release -B .cmake -S . && cmake --build .cmake",
     "compile:rust:wasm": "wasm-pack build --release --out-dir dist/rust --target web",
     "compile:rust:native": "cargo build --release",
     "build:web": "npm run compile:native:wasm && npm run compile:rust:wasm && npm run compile:web && npm run compile:server && npm run compile:worker",
-    "build:tauri": "npm run compile:native:native && npm run compile:rust:native && npm run compile:web && npm run compile:server",
+    "compile:server:sea": "npm run compile:server && node --experimental-sea-config sea-config.json && mkdir -p binaries && cp \"$(node -e 'process.stdout.write(process.execPath)')\" binaries/server && npx postject binaries/server NODE_SEA_BLOB dist/sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 --macho-segment-name NODE_SEA",
+    "build:tauri": "npm run compile:native:native && npm run compile:rust:native && npm run compile:web && npm run compile:server:sea && cargo tauri build --config tauri.conf.json --bundles appimage",
     "dev": "APP_MODE=develop expo start --web",
     "lint": "expo lint",
     "version": "tsx scripts/version.ts",
@@ -71,6 +72,7 @@
     "tailwindcss": "^3.4.19",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
+    "postject": "^1.0.0-alpha.6",
     "wrangler": "^4.80.0"
   },
   "private": true

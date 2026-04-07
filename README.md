@@ -123,16 +123,23 @@ Workers run the same `.wasm` built above — no separate compile step. The key d
 - Workers use the [Wasm imports API](https://developers.cloudflare.com/workers/runtime-apis/webassembly/): `import wasm from './core.wasm'`
 - Memory and instantiation are handled per-isolate; keep the module lightweight
 
-### Desktop: Tauri with Node Sidecar + Native Addon
+### Desktop: Tauri with Node.js SEA Sidecar + Native Addon
 
-Tauri runs Node as a [sidecar process](https://tauri.app/v1/guides/building/sidecar/). The Node server loads native code as a `.node` addon built with [node-gyp](https://github.com/nodejs/node-gyp) or [napi-rs](https://napi.rs/):
+Tauri runs the Node server as a [sidecar](https://tauri.app/v1/guides/building/sidecar/) compiled to a [Node.js Single Executable Application (SEA)](https://nodejs.org/api/single-executable-applications.html) — a self-contained binary with Node.js embedded. No separate Node.js installation is required on the user's machine.
 
-- **Rust** → `napi-rs` crate compiles to a `.node` file loaded via `require('bindings')('...')`
+- **Rust** → `napi-rs` crate compiles to a `.node` addon loaded by the SEA server via `require()`
 - **ObjC++** → CMake builds `core` as a shared library linked into the `.node` addon
+- **Server** → `dist/main.js` bundled by esbuild, then injected into a Node binary via `postject`
 
 ```bash
-npm run build:rust:native     # cargo build --release (native target)
+npm run build:tauri   # builds native code + web frontend + SEA server + Tauri app
 ```
+
+The SEA build steps (`compile:server:sea`):
+1. esbuild bundles `src/server.ts` → `dist/main.js`
+2. `node --experimental-sea-config sea-config.json` generates `dist/sea-prep.blob`
+3. Copy the current Node.js binary to `binaries/server`
+4. `postject` injects the blob into the binary
 
 ### Mobile: Expo Module via JSI
 

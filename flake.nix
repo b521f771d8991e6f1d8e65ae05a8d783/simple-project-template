@@ -59,7 +59,12 @@
 
           # Rust toolchain with wasm target
           rustToolchain = pkgs.rust-bin.stable.latest.default.override {
-            targets = [ "wasm32-unknown-unknown" ];
+            targets = [
+              "wasm32-unknown-unknown"
+              "x86_64-unknown-linux-gnu"
+              "aarch64-unknown-linux-gnu"
+              "aarch64-apple-darwin"
+            ];
           };
 
           rustPlatform = pkgs.makeRustPlatform {
@@ -155,6 +160,69 @@
             '';
 
             meta.mainProgram = "main.js";
+          };
+
+          # Tauri desktop app — Expo web frontend + Node sidecar + napi-rs native addon
+          tauri-app = pkgs.buildNpmPackage {
+            pname = "${projectName}-tauri";
+            inherit version;
+
+            src = ./.;
+
+            npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
+            npmConfigHook = pkgs.importNpmLock.npmConfigHook;
+
+            nativeBuildInputs = with pkgs; default.nativeBuildInputs ++ [
+              cargo-tauri
+            ] ++ lib.optionals stdenv.isLinux [ wrapGAppsHook3 ];
+
+            buildInputs = with pkgs; [
+              boost
+              gnustep-base
+            ] ++ lib.optionals stdenv.isLinux [
+              webkitgtk_4_1
+              gtk3
+              libsoup_3
+              glib
+              cairo
+              pango
+              gdk-pixbuf
+              atk
+              openssl
+            ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+              WebKit
+              AppKit
+              Security
+              CoreServices
+              IOKit
+            ]);
+
+            dontUseCmakeConfigure = true;
+
+            env = {
+              EXPO_NO_TELEMETRY = 1;
+              CC = "${pkgs.clang}/bin/clang";
+              CXX = "${pkgs.clang}/bin/clang++";
+              OBJC = "${pkgs.clang}/bin/clang";
+              OBJCXX = "${pkgs.clang}/bin/clang++";
+              PROJECT_NAME = projectName;
+            };
+
+            buildPhase = ''
+              mkdir -p .cargo
+              cp ${cargoVendorConfig} .cargo/config.toml
+
+              echo "${version}" > VERSION
+              npm run build:tauri
+            '';
+
+            installPhase = ''
+              mkdir -p $out/bin
+              cp target/release/${projectName} $out/bin/
+              cp -r dist $out/
+            '';
+
+            meta.mainProgram = projectName;
           };
 
           # Layered Docker image — Node.js runtime in lower layer, app in top layer

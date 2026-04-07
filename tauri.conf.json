@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "simple-project-template",
+  "identifier": "xyz.223740.simple-project-template",
+  "build": {
+    "frontendDist": "./dist",
+    "devUrl": "http://localhost:8081"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "src-tauri/icons/32x32.png",
+      "src-tauri/icons/128x128.png",
+      "src-tauri/icons/128x128@2x.png",
+      "src-tauri/icons/icon.icns",
+      "src-tauri/icons/icon.ico"
+    ],
+    "externalBin": ["binaries/server"]
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "simple-project-template",
+        "width": 1200,
+        "height": 800
+      }
+    ]
+  }
+}

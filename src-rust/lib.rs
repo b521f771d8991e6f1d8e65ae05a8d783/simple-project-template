@@ -1,8 +1,4 @@
-#![cfg_attr(not(test), no_std)]
 #![forbid(unsafe_code)]
-
-#[cfg(not(test))]
-use panic_halt as _;
 
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
