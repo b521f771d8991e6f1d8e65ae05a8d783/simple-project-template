@@ -169,7 +169,7 @@
           };
 
           # Tauri desktop app — Expo web frontend + Node sidecar + napi-rs native addon
-          tauri-app = pkgs.buildNpmPackage {
+          gui-app = pkgs.buildNpmPackage {
             pname = "${projectName}-tauri";
             inherit version;
 
@@ -180,12 +180,11 @@
 
             nativeBuildInputs = with pkgs; default.nativeBuildInputs ++ [
               cargo-tauri
-            ] ++ lib.optionals stdenv.isLinux [ wrapGAppsHook3 ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+            ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
               apple-sdk
             ]);
 
             buildInputs = with pkgs; default.buildInputs ++ lib.optionals stdenv.isLinux [
-              gnustep-base
               webkitgtk_4_1
               gtk3
               libsoup_3
@@ -216,7 +215,7 @@
 
             installPhase = ''
               mkdir -p $out/bin
-              cp target/release/tauri-app $out/bin/
+              cp target/release/tauri-app $out/bin/${projectName}
             '';
 
             meta.mainProgram = projectName;
