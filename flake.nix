@@ -5,10 +5,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    crane.url = "github:ipetkov/crane";
   };
 
-  outputs = { self, nixpkgs, rust-overlay, crane }:
+  outputs = { self, nixpkgs, rust-overlay }:
     let
       lib = nixpkgs.lib;
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
@@ -71,46 +70,28 @@
             ];
           };
 
-          craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-
-          rustSrc = pkgs.lib.cleanSourceWith {
-            src = ./.;
-            filter = path: type:
-              (craneLib.filterCargoSources path type);
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = rustToolchain;
+            rustc = rustToolchain;
           };
 
-          commonArgs = {
-            src = rustSrc;
-            pname = projectName;
-            inherit version;
+          cargoVendorDir = rustPlatform.importCargoLock {
+            lockFile = ./Cargo.lock;
           };
-
-          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-          # musl static build
-          rustMusl = craneLib.buildPackage (commonArgs // {
-            inherit cargoArtifacts;
-            CARGO_BUILD_TARGET = muslTarget;
-            CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-          });
-
-          # wasm build
-          rustWasm = craneLib.buildPackage (commonArgs // {
-            inherit cargoArtifacts;
-            CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-            doCheck = false;
-          });
 
           # One native binary package per discovered bin target.
           # Accessible via: nix run .#rust-<name>
           rustBins = builtins.listToAttrs (
             map (binName: {
               name = "rust-${binName}";
-              value = craneLib.buildPackage (commonArgs // {
-                inherit cargoArtifacts;
-                cargoExtraArgs = "--bin ${binName}";
+              value = rustPlatform.buildRustPackage {
+                pname = binName;
+                inherit version;
+                src = pkgs.lib.cleanSource ./.;
+                cargoLock.lockFile = ./Cargo.lock;
+                cargoBuildFlags = [ "--bin" binName ];
                 meta.mainProgram = binName;
-              });
+              };
             }) rustBinNames
           );
         in
@@ -125,11 +106,8 @@
             npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
             npmConfigHook = pkgs.importNpmLock.npmConfigHook;
 
-            inherit cargoArtifacts;
-
             nativeBuildInputs = with pkgs; [
               git
-              craneLib.installCargoArtifactsHook
 
               # Objective C/++ Toolchain
               clang
@@ -142,6 +120,7 @@
               rustToolchain
               wasm-bindgen-cli_0_2_114
               wasm-pack
+              binaryen
             ];
 
             buildInputs = with pkgs; [
@@ -152,18 +131,27 @@
             dontUseCmakeConfigure = true; # this runs during npm run build anyway
 
             env = {
-              EXPO_NO_TELEMETRY=1;
-              OBJC="${pkgs.clang}/bin/clang";
-              OBJCXX="${pkgs.clang}/bin/clang++";
+              EXPO_NO_TELEMETRY = 1;
+              OBJC = "${pkgs.clang}/bin/clang";
+              OBJCXX = "${pkgs.clang}/bin/clang++";
             };
 
             buildPhase = ''
-              echo "${version}" > VERSION
+              export CARGO_HOME=$(mktemp -d)
+              cat > "''${CARGO_HOME}/config.toml" << EOF
+[source.crates-io]
+replace-with = "vendored-sources"
 
+[source.vendored-sources]
+directory = "${cargoVendorDir}"
+EOF
+
+              echo "${version}" > VERSION
               npm run build:node
             '';
 
             installPhase = ''
+              mkdir -p $out/bin
               cp -r dist/* $out/bin/
             '';
 
