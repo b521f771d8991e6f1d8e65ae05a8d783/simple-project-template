@@ -3,7 +3,7 @@
   "productName": "simple-project-template",
   "identifier": "xyz.223740.simple-project-template",
   "build": {
-    "frontendDist": "./dist/client",
+    "frontendDist": "http://localhost:8081",
     "devUrl": "http://localhost:8081"
   },
   "bundle": {
