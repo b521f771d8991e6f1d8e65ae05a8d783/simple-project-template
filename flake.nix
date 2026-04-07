@@ -91,6 +91,15 @@
             directory = "${cargoVendorDir}"
           '';
 
+          commonEnv = {
+            EXPO_NO_TELEMETRY = 1;
+            CC = "${pkgs.clang}/bin/clang";
+            CXX = "${pkgs.clang}/bin/clang++";
+            OBJC = "${pkgs.clang}/bin/clang";
+            OBJCXX = "${pkgs.clang}/bin/clang++";
+            PROJECT_NAME = projectName;
+          };
+
           # One native binary package per discovered bin target.
           # Accessible via: nix run .#rust-<name>
           rustBins = builtins.listToAttrs (
@@ -138,22 +147,10 @@
 
             buildInputs = with pkgs; [
               boost
-            ] ++ lib.optionals stdenv.isLinux [
-              gnustep-base
             ];
 
+            env = commonEnv;
             dontUseCmakeConfigure = true; # this runs during npm run build anyway
-
-            env = {
-              EXPO_NO_TELEMETRY = 1;
-              
-              CC = "${pkgs.clang}/bin/clang";
-              CXX = "${pkgs.clang}/bin/clang++";
-              OBJC = "${pkgs.clang}/bin/clang";
-              OBJCXX = "${pkgs.clang}/bin/clang++";
-              
-              PROJECT_NAME = projectName;
-            };
 
             buildPhase = ''
               mkdir -p .cargo
@@ -183,10 +180,10 @@
 
             nativeBuildInputs = with pkgs; default.nativeBuildInputs ++ [
               cargo-tauri
-              makeWrapper
             ] ++ lib.optionals stdenv.isLinux [ wrapGAppsHook3 ];
 
             buildInputs = with pkgs; default.buildInputs ++ lib.optionals stdenv.isLinux [
+              gnustep-base
               webkitgtk_4_1
               gtk3
               libsoup_3
@@ -197,6 +194,7 @@
               atk
               openssl
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+              apple-sdk
               WebKit
               AppKit
               Security
@@ -205,15 +203,7 @@
             ]);
 
             dontUseCmakeConfigure = true;
-
-            env = {
-              EXPO_NO_TELEMETRY = 1;
-              CC = "${pkgs.clang}/bin/clang";
-              CXX = "${pkgs.clang}/bin/clang++";
-              OBJC = "${pkgs.clang}/bin/clang";
-              OBJCXX = "${pkgs.clang}/bin/clang++";
-              PROJECT_NAME = projectName;
-            };
+            env = commonEnv;
 
             buildPhase = ''
               mkdir -p .cargo
@@ -224,12 +214,9 @@
             '';
 
             installPhase = ''
-              mkdir -p $out/app/dist/binaries $out/bin
-              cp target/release/tauri-app $out/app/
-              cp dist/binaries/server-* $out/app/dist/binaries/
-              cp -r dist/server $out/app/dist/server
-              makeWrapper $out/app/tauri-app $out/bin/tauri-app \
-                --run "cd '$out/app'"
+              mkdir -p $out/bin/dist/binaries
+              cp target/release/tauri-app $out/bin/
+              cp dist/binaries/server-* $out/bin/dist/binaries/
             '';
 
             meta.mainProgram = projectName;
