@@ -1,0 +1,93 @@
+name: Nix Flake ❄️
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      packages: write
+      actions: write
+      id-token: write
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for nix
+        id: check_nix
+        run: |
+          if command -v nix >/dev/null 2>&1; then
+            echo "present=true" >> $GITHUB_OUTPUT
+          else
+            echo "present=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: DeterminateSystems/flake-checker-action@v12
+        with:
+          fail-mode: false
+
+      - uses: DeterminateSystems/nix-installer-action@v13
+        if: steps.check_nix.outputs.present == 'false'
+        with:
+          flakehub: false
+
+      - uses: DeterminateSystems/magic-nix-cache-action@v7
+        with:
+          use-flakehub: false
+
+      - name: Build and test Nix Flake
+        run: |
+          nix --extra-experimental-features "flakes nix-command" flake check -L --show-trace
+          mkdir ${{ runner.temp }}/result
+          nix --extra-experimental-features "flakes nix-command" copy --no-check-sigs \
+            .#default \
+            --to ${{ runner.temp }}/result
+          if [ "$(uname)" = "Linux" ]; then
+            nix --extra-experimental-features "flakes nix-command" copy --no-check-sigs \
+              .#docker \
+              --to ${{ runner.temp }}/result
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ runner.os }}-${{ runner.arch }}
+          path: ${{ runner.temp }}/result
+          if-no-files-found: error
+
+      - name: Push Docker image to GHCR
+        if: runner.os == 'Linux' && runner.arch == 'X64'
+        env:
+          REGISTRY: ghcr.io
+          IMAGE_NAME: ${{ github.repository }}
+        run: |
+          nix --extra-experimental-features "flakes nix-command" build .#docker
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          IMAGE_TAG="${GITHUB_SHA::8}"
+          docker load < "$(readlink -f result)"
+          docker tag "${IMAGE_NAME}:latest" "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+          docker tag "${IMAGE_NAME}:latest" "${REGISTRY}/${IMAGE_NAME}:latest"
+          docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+          docker push "${REGISTRY}/${IMAGE_NAME}:latest"
+
+      - name: Deploy to Cloudflare 🚀
+        if: github.event_name == 'push' && runner.os == 'Linux' && runner.arch == 'X64'
+        run: |
+          source .env
+          nix --extra-experimental-features "flakes nix-command" build -L .#default
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            npx wrangler deploy --name "$PROJECT_NAME"
+          else
+            npx wrangler versions upload --name "$PROJECT_NAME" \
+              --tag "${{ github.ref_name }}" \
+              --message "Branch: ${{ github.ref_name }}"
+          fi
+        env:
+          TMPDIR: /tmp
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

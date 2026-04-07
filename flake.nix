@@ -71,6 +71,14 @@
             lockFile = ./Cargo.lock;
           };
 
+          cargoVendorConfig = pkgs.writeText "cargo-vendor-config.toml" ''
+            [source.crates-io]
+            replace-with = "vendored-sources"
+
+            [source.vendored-sources]
+            directory = "${cargoVendorDir}"
+          '';
+
           # One native binary package per discovered bin target.
           # Accessible via: nix run .#rust-<name>
           rustBins = builtins.listToAttrs (
@@ -124,20 +132,18 @@
 
             env = {
               EXPO_NO_TELEMETRY = 1;
+              
+              CC = "${pkgs.clang}/bin/clang";
+              CXX = "${pkgs.clang}/bin/clang++";
               OBJC = "${pkgs.clang}/bin/clang";
               OBJCXX = "${pkgs.clang}/bin/clang++";
+              
               PROJECT_NAME = projectName;
             };
 
             buildPhase = ''
-              export CARGO_HOME=$(mktemp -d)
-              cat > "''${CARGO_HOME}/config.toml" << EOF
-[source.crates-io]
-replace-with = "vendored-sources"
-
-[source.vendored-sources]
-directory = "${cargoVendorDir}"
-EOF
+              mkdir -p .cargo
+              cp ${cargoVendorConfig} .cargo/config.toml
 
               echo "${version}" > VERSION
               npm run build:web

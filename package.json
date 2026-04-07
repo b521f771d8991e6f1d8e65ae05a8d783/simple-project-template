@@ -9,6 +9,7 @@
     "compile:rust:wasm": "wasm-pack build --release --out-dir dist/rust --target web",
     "compile:rust:native": "cargo build --release",
     "build:web": "npm run compile:native:wasm && npm run compile:rust:wasm && npm run compile:web && npm run compile:server && npm run compile:worker",
+    "build:tauri": "npm run compile:native:native && npm run compile:rust:native && npm run compile:web && npm run compile:server",
     "dev": "APP_MODE=develop expo start --web",
     "lint": "expo lint",
     "version": "tsx scripts/version.ts",
