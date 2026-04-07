@@ -15,7 +15,8 @@
     "version": "tsx scripts/version.ts",
     "tag": "tsx scripts/tag.ts",
     "tag:push": "tsx scripts/tag.ts --push",
-    "generate:icons": "tsx scripts/generate-icons.ts"
+    "generate:icons": "tsx scripts/generate-icons.ts",
+    "test": "(cd .cmake && ctest ) && cargo test && jest"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^2.1.91",
@@ -29,6 +30,7 @@
     "@resvg/resvg-js": "^2.6.2",
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
+    "@types/jest": "29.5.14",
     "@types/morgan": "^1.9.10",
     "@types/react": "~19.1.17",
     "compression": "^1.8.1",
@@ -50,6 +52,8 @@
     "express": "^5.2.1",
     "helmet": "^8.1.0",
     "html2canvas": "^1.4.1",
+    "jest": "~29.7.0",
+    "jest-expo": "~54.0.17",
     "morgan": "^1.10.1",
     "nativewind": "^4.2.3",
     "react": "19.1.0",

@@ -125,8 +125,11 @@
             npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
             npmConfigHook = pkgs.importNpmLock.npmConfigHook;
 
+            inherit cargoArtifacts;
+
             nativeBuildInputs = with pkgs; [
               git
+              craneLib.installCargoArtifactsHook
 
               # Objective C/++ Toolchain
               clang
@@ -146,12 +149,12 @@
               gnustep-base
             ];
 
+            dontUseCmakeConfigure = true; # this runs during npm run build anyway
+
             env = {
               EXPO_NO_TELEMETRY=1;
-              CC="clang";
-              CXX="clang++";
-              OBJC="clang";
-              OBJCXX="clang++";
+              OBJC="${pkgs.clang}/bin/clang";
+              OBJCXX="${pkgs.clang}/bin/clang++";
             };
 
             buildPhase = ''

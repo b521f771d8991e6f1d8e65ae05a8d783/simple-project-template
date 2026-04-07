@@ -13,9 +13,6 @@ path = "src-rust/lib.rs"
 [profile.release]
 panic = "abort"
 
-[profile.dev]
-panic = "abort"
-
 [[bin]]
 name = "hello_world"
 path = "src-rust/bin/hello_world/bin.rs"
