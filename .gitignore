@@ -54,3 +54,4 @@ app-example
 /target
 
 /.cmake
+/.cmake-wasm

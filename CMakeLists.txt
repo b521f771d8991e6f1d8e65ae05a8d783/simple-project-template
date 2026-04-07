@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
+cmake_policy(SET CMP0167 NEW)
 set(PROJECT_NAME "$ENV{PROJECT_NAME}")
 project("${PROJECT_NAME}" LANGUAGES C CXX OBJC OBJCXX)
 
