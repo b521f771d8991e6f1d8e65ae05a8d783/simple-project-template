@@ -2,6 +2,7 @@
 name = "simple-project-template"
 version = "0.0.0"
 edition = "2024"
+default-run = "tauri-app"
 
 [features]
 tauri-app = ["dep:napi", "dep:napi-derive", "dep:tauri", "dep:tauri-plugin-shell", "dep:tauri-build"]

@@ -10,7 +10,7 @@
     "compile:rust:native": "cargo build --release",
     "build:web": "npm run compile:native:wasm && npm run compile:rust:wasm && npm run compile:web && npm run compile:server && npm run compile:worker",
     "compile:server:sea": "npm run compile:server && node --experimental-sea-config sea-config.json && mkdir -p dist/binaries && TARGET=$(rustc -vV | grep '^host:' | sed 's/host: //') && cp \"$(node -e 'process.stdout.write(process.execPath)')\" \"dist/binaries/server-${TARGET}\" && chmod u+w \"dist/binaries/server-${TARGET}\" && npx postject \"dist/binaries/server-${TARGET}\" NODE_SEA_BLOB dist/sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 --macho-segment-name NODE_SEA",
-    "build:tauri": "npm run compile:native:native && npm run compile:rust:native && npm run compile:web && npm run compile:server:sea && cargo tauri build --config tauri.conf.json --no-bundle",
+    "build:tauri": "npm run compile:native:native && npm run compile:rust:native && npm run compile:web && npm run compile:server:sea && cargo tauri build --config tauri.conf.json --no-bundle --features tauri-app",
     "dev": "APP_MODE=develop expo start --web",
     "lint": "expo lint",
     "version": "tsx scripts/version.ts",

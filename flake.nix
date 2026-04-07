@@ -182,7 +182,6 @@
 
             nativeBuildInputs = with pkgs; default.nativeBuildInputs ++ [
               cargo-tauri
-              appimage-run
             ] ++ lib.optionals stdenv.isLinux [ wrapGAppsHook3 ];
 
             buildInputs = with pkgs; default.buildInputs ++ lib.optionals stdenv.isLinux [
