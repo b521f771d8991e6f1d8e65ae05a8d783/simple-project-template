@@ -180,7 +180,9 @@
 
             nativeBuildInputs = with pkgs; default.nativeBuildInputs ++ [
               cargo-tauri
-            ] ++ lib.optionals stdenv.isLinux [ wrapGAppsHook3 ];
+            ] ++ lib.optionals stdenv.isLinux [ wrapGAppsHook3 ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+              apple-sdk
+            ]);
 
             buildInputs = with pkgs; default.buildInputs ++ lib.optionals stdenv.isLinux [
               gnustep-base
@@ -194,7 +196,6 @@
               atk
               openssl
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
-              apple-sdk
               WebKit
               AppKit
               Security
