@@ -138,6 +138,7 @@
               # Rust toolchain with musl + wasm targets
               rustToolchain
               wasm-bindgen-cli_0_2_114
+              wasm-pack
             ];
 
             buildInputs = with pkgs; [
@@ -147,6 +148,10 @@
 
             env = {
               EXPO_NO_TELEMETRY=1;
+              CC="clang";
+              CXX="clang++";
+              OBJC="clang";
+              OBJCXX="clang++";
             };
 
             buildPhase = ''
@@ -184,7 +189,7 @@
               };
             };
           };
-          
+
         } // rustBins
       );
     };
