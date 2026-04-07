@@ -18,19 +18,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - run: sudo mkdir -p /nix/store
-
-      - uses: actions/cache@v4
-        with:
-          path: /nix/store
-          key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-keys: nix-${{ runner.os }}-
-
-      - uses: nixbuild/nix-quick-install-action@v34
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build and test Nix Flake
         run: |
           nix flake check -L --show-trace
+          nix build
           mkdir ${{ runner.temp }}/result
           nix copy --no-check-sigs \
             .#default \
@@ -58,9 +52,6 @@ jobs:
       #    docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
       #    docker push "${REGISTRY}/${IMAGE_NAME}:latest"
 
-      #- name: Deploy to Cloudflare 🚀
-      #  if: github.event_name == 'push' && runner.os == 'Linux' && runner.arch == 'X64'
-      #  run: |
       #    source .env
       #    nix build -L .#default
       #    if [ "${{ github.ref }}" = "refs/heads/main" ]; then
