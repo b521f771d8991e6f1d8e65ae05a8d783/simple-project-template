@@ -1,3 +1,7 @@
+# Start of Session
+
+Always read [README.md](README.md) at the start of every session before doing anything else.
+
 # Guiding Principles
 
 Produce code that is **simple, fast, portable, secure, and reliable**:
@@ -17,15 +21,6 @@ Do not install system tools via apt, brew, cargo install, npm install -g, pip, o
 # Build Scripts ([package.json](package.json))
 
 All build orchestration uses npm scripts.
-
-### Compile targets
-
-| Script | Purpose |
-|---|---|
-| `compile:wasm` / `compile:wasm:dev` | Cargo WASM build (release/debug) + wasm-bindgen → `src/wasm/` |
-| `compile:web` | Expo static web export → `dist/` |
-| `compile:server` / `compile:server:dev` | esbuild server bundle → `dist/main.js` |
-| `compile:worker` / `compile:worker:dev` | esbuild CF Worker bundle → `dist/worker.js` |
 
 ### Build pipelines
 
@@ -104,9 +99,9 @@ All styling via **NativeWind** — Tailwind utility classes on the `className` p
 
 # Language Selection
 
-- **Rust** — all business logic, data processing, validation, algorithms, API clients, database access. Lives in [src-rust/](src-rust/), called via [src/lib/rust.ts](src/lib/rust.ts).
-- **Objective-C/C++** — native platform integration, Expo native modules, and bridging code that requires direct access to native frameworks (Linux, Windows, UIKit, Foundation, CoreData, etc.).
-- **TypeScript** — UI components, screen layouts, navigation, styling, and thin glue wiring Rust to UI.
+- **TypeScript** — business logic, data processing, validation, algorithms, API clients, database access, UI components, screen layouts, navigation, styling, and glue code.
+- **Rust** — performance-critical paths (heavy computation, data-intensive algorithms). Lives in [src-rust/](src-rust/), called via [src/lib/rust.ts](src/lib/rust.ts).
+- **C/C++/Objective-C** — native platform integration, Expo native modules, and bridging code that requires direct access to native frameworks, lives in [src-native/](src-native/) (UIKit, Foundation, CoreData, Win32, etc.).
 
 # Project Structure
 
@@ -134,23 +129,6 @@ All styling via **NativeWind** — Tailwind utility classes on the `className` p
 **Never use `devDependencies`.** All deps go in `dependencies`.
 
 Before adding anything new: check if [package.json](package.json), [Cargo.toml](Cargo.toml), or [flake.nix](flake.nix) already covers it. New deps must be widely adopted, actively maintained, from a trusted registry, and open-source licensed.
-
-# Deployment Contexts
-
-| Context | Entry point | Available APIs |
-|---|---|---|
-| **Express server** | [src/server.ts](src/server.ts) | Full Node.js, no DOM |
-| **Cloudflare Worker** | [src/worker.ts](src/worker.ts) | Workers runtime, no Node.js fs/child_process |
-| **Expo frontend** | [src/app/](src/app/) | React Native / browser APIs only |
-
-Cross-context communication goes through the Express HTTP API. Import from `@/lib/rust` for Rust interop — never interact with WASM or native bridges directly.
-
-# CI/CD
-
-| Workflow | Purpose |
-|---|---|
-| **Rapid Deploy** ([rapid-deploy.yml](.github/workflows/rapid-deploy.yml)) | Fast Docker/bun build for dev branches. ~1 min to CF Workers. |
-| **Nix Flake** ([nix-flake.yml](.github/workflows/nix-flake.yml)) | Reproducible Nix builds for beta/stable. Multi-platform + Docker + CF. |
 
 # Build Verification
 
