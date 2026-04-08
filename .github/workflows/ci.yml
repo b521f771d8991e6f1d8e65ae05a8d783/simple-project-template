@@ -69,3 +69,32 @@ jobs:
           path: dist/
           if-no-files-found: error
 
+  build-docker-dev:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@main
+
+      - name: Install Nix ❄️
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Build docker-dev image 🐳
+        run: nix build .#docker-dev --out-link result
+
+      - name: Log in to GHCR 🔑
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Load and push image 🚀
+        run: |
+          docker load < result
+          IMAGE_NAME=$(docker images --format '{{.Repository}}:{{.Tag}}' | head -1)
+          GHCR_IMAGE="ghcr.io/${{ github.repository_owner }}/$(echo "$IMAGE_NAME" | sed 's|:|-|')"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          docker tag "$IMAGE_NAME" "$GHCR_IMAGE:$SHORT_SHA"
+          docker tag "$IMAGE_NAME" "$GHCR_IMAGE:latest"
+          docker push "$GHCR_IMAGE:$SHORT_SHA"
+          docker push "$GHCR_IMAGE:latest"
+
