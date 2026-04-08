@@ -38,7 +38,14 @@ if (!("DISABLE_CLUSTER" in process.env) && cluster.isPrimary) {
         console.log("Worker " + worker.process.pid + " is online.");
     });
 
+    let shuttingDown = false;
+    process.on("SIGINT", () => {
+        shuttingDown = true;
+        for (const id in cluster.workers) cluster.workers[id]?.process.kill("SIGINT");
+    });
+
     cluster.on("exit", function (worker, _code, _signal) {
+        if (shuttingDown) return;
         console.log("worker " + worker.process.pid + " died. Restarting...");
         cluster.fork();
     });

@@ -6,7 +6,6 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { saveMessage, loadMessages, clearHistory, type DreamMessage } from "@/lib/dream-history";
 import { useTranslation } from "@/lib/i18n";
-import { Popup } from "@/components/popup";
 
 interface DreamPanelProps {
 	visible: boolean;
@@ -40,7 +39,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 
 	// Track pending preview jobs: jobId → previewUrl
 	const [pendingPreview, setPendingPreview] = useState<{ jobId: string; previewUrl: string; summary: string } | null>(null);
-	const [showPreviewPopup, setShowPreviewPopup] = useState(false);
 
 	const panResponder = useRef(
 		PanResponder.create({
@@ -274,7 +272,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 						<View style={[styles.bubble, { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" }]}>
 							<Text style={{ color: c.text, fontSize: 13, marginBottom: 6 }}>Preview ready.</Text>
 							<View style={styles.decisionRow}>
-								<Pressable onPress={() => setShowPreviewPopup(true)} style={[styles.decisionBtn, { backgroundColor: c.accent }]}>
+								<Pressable onPress={() => { if (Platform.OS === "web") window.open(pendingPreview.previewUrl, "_blank"); }} style={[styles.decisionBtn, { backgroundColor: c.accent }]}>
 									<Text style={styles.decisionBtnText}>Show Preview</Text>
 								</Pressable>
 								<Pressable onPress={handleAccept} style={[styles.decisionBtn, { backgroundColor: "#22c55e" }]}>
@@ -327,29 +325,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				</View>
 			</Pressable>
 
-			{/* Preview popup with iframe — only when user clicks Show Preview */}
-			{Platform.OS === "web" && pendingPreview && showPreviewPopup && (
-				<Popup
-					open
-					onClose={() => setShowPreviewPopup(false)}
-					title="Dream Preview"
-					dark={isDark}
-					width="80vw"
-					maxWidth={1400}
-					height="85vh"
-					overlay={false}
-					zIndex={60}
-					actions={[
-						{ label: "Send to Developer", onClick: () => { setShowPreviewPopup(false); handleAccept(); } },
-						{ label: "Decline", onClick: () => { setShowPreviewPopup(false); handleDecline(); } },
-					]}
-				>
-					<iframe
-						src={pendingPreview.previewUrl}
-						style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
-					/>
-				</Popup>
-			)}
 		</Modal>
 	);
 }

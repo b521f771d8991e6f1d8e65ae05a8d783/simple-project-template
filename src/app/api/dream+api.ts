@@ -1,5 +1,5 @@
 import { spawn, execFile } from "child_process";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { promisify } from "util";
 import * as net from "net";
@@ -85,9 +85,10 @@ async function cleanupJob(id: string) {
 }
 
 export async function POST(req: Request): Promise<Response> {
-	const appMode = (process.env.APP_MODE ?? "develop").toLowerCase();
-	if (appMode !== "dream" && appMode !== "develop") {
-		return Response.json({ error: `Dream Mode is disabled (APP_MODE=${appMode})` }, { status: 403 });
+	const repoSource = process.env.DREAM_MODE_SOURCES
+		?? (existsSync(join(cwd, "package.json")) && existsSync(join(cwd, ".git")) ? cwd : null);
+	if (!repoSource) {
+		return Response.json({ error: "Dream mode disabled. Set DREAM_MODE_SOURCES to a source directory." }, { status: 403 });
 	}
 
 	const { prompt, screenshot, pollJobId, action, commitHash, jobId: actionJobId } = await req.json();
@@ -223,9 +224,9 @@ export async function POST(req: Request): Promise<Response> {
 
 		try {
 			// 1. Clone the repo locally (hardlinks, fast)
-			await exec("git", ["clone", "--no-local", cwd, cloneDir]);
+			await exec("git", ["clone", "--no-local", repoSource, cloneDir]);
 			dbAppendLog(jobId, "Copying dependencies...");
-			await exec("cp", ["-r", join(cwd, "node_modules"), join(cloneDir, "node_modules")]);
+			await exec("cp", ["-r", join(repoSource, "node_modules"), join(cloneDir, "node_modules")]);
 			dbAppendLog(jobId, "Starting Claude Code...");
 
 			// 3. Run Claude Code in the clone
