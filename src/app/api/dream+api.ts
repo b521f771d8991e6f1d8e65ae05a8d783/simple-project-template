@@ -333,7 +333,7 @@ export async function POST(req: Request): Promise<Response> {
 
 			const devServer = spawn("npx", ["expo", "start", "--web", "--port", String(port)], {
 				cwd: cloneDir,
-				env: { ...process.env, APP_MODE: "develop", BROWSER: "none" },
+				env: { ...process.env, DREAM_MODE_SOURCES: "", DREAM_PREVIEW: "1", BROWSER: "none" },
 				stdio: ["ignore", "pipe", "pipe"],
 			});
 
