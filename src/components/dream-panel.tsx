@@ -225,16 +225,9 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				{/* Header — drag handle */}
 				<View style={[styles.header, { borderBottomColor: c.border, cursor: "grab" } as any]} {...panResponder.panHandlers}>
 					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
-					<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-						{messages.length > 0 && (
-							<Pressable onPress={handleClear} hitSlop={8}>
-								<Text style={{ color: c.textSecondary, fontSize: 12 }}>Clear</Text>
-							</Pressable>
-						)}
-						<Pressable onPress={onClose} hitSlop={8}>
-							<Text style={{ color: c.textSecondary, fontSize: 18 }}>✕</Text>
-						</Pressable>
-					</View>
+					<Pressable onPress={onClose} hitSlop={8}>
+						<Text style={{ color: c.textSecondary, fontSize: 18 }}>✕</Text>
+					</Pressable>
 				</View>
 
 				{/* Messages */}

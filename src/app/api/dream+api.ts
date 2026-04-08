@@ -224,15 +224,8 @@ export async function POST(req: Request): Promise<Response> {
 		try {
 			// 1. Clone the repo locally (hardlinks, fast)
 			await exec("git", ["clone", "--no-local", cwd, cloneDir]);
-			const { existsSync, symlinkSync } = await import("fs");
-			const srcModules = join(cwd, "node_modules");
-			const dstModules = join(cloneDir, "node_modules");
-			if (existsSync(srcModules) && !existsSync(dstModules)) {
-				symlinkSync(srcModules, dstModules);
-			} else if (!existsSync(dstModules)) {
-				dbAppendLog(jobId, "Installing dependencies...");
-				await exec("npm", ["ci"], { cwd: cloneDir });
-			}
+			dbAppendLog(jobId, "Copying dependencies...");
+			await exec("cp", ["-r", join(cwd, "node_modules"), join(cloneDir, "node_modules")]);
 			dbAppendLog(jobId, "Starting Claude Code...");
 
 			// 3. Run Claude Code in the clone
