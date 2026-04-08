@@ -167,7 +167,7 @@ export async function POST(req: Request): Promise<Response> {
 			// Cleanup
 			await cleanupJob(actionJobId);
 			dbSet(actionJobId, { status: "done", finished_at: Date.now() / 1000 | 0 });
-			return Response.json({ summary: developerEmail ? "Your suggestion has been sent to the developer." : "Your suggestion has been logged." });
+			return Response.json({ summary: developerEmail ? "Your suggestion has been sent to the developer! 🎉 Thanks for sharing your awesome idea!" : "Your suggestion has been logged! 🚀 Thanks for dreaming big with us!" });
 		} catch (err) {
 			const error = err instanceof Error ? err.message : String(err);
 			dbSet(actionJobId, { status: "error", error, finished_at: Date.now() / 1000 | 0 });
@@ -252,7 +252,9 @@ export async function POST(req: Request): Promise<Response> {
 			let summary: string | undefined;
 
 			await new Promise<void>((resolve, reject) => {
-				const proc = spawn("claude", claudeArgs, {
+				const proc = spawn("sandbox.sh", [
+						cloneDir, "--rw-home", "--", "claude", ...claudeArgs,
+					], {
 					cwd: cloneDir,
 					env: { ...process.env },
 					stdio: ["ignore", "pipe", "pipe"],
@@ -331,7 +333,9 @@ export async function POST(req: Request): Promise<Response> {
 			const port = await findFreePort();
 			const previewUrl = `http://localhost:${port}`;
 
-			const devServer = spawn("npx", ["expo", "start", "--web", "--port", String(port)], {
+			const devServer = spawn("sandbox.sh", [
+					cloneDir, "--", "npx", "expo", "start", "--web", "--port", String(port),
+				], {
 				cwd: cloneDir,
 				env: { ...process.env, DREAM_MODE_SOURCES: "", DREAM_PREVIEW: "1", BROWSER: "none" },
 				stdio: ["ignore", "pipe", "pipe"],

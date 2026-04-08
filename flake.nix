@@ -89,46 +89,7 @@
             builtins.filterSource
             (path: _: builtins.baseNameOf path != ".env")
             ./.;
-          devEntrypoint = pkgs.writeShellScriptBin "entrypoint" ''
-            export PATH="/app/node_modules/.bin:$PATH"
-            if [ -n "$ANTHROPIC_API_KEY" ]; then
-              KEY_PREVIEW="''${ANTHROPIC_API_KEY:0:12}...''${ANTHROPIC_API_KEY: -4}"
-              echo "Claude API key: $KEY_PREVIEW"
-              echo "Check balance:  https://console.anthropic.com/account/billing"
-            elif [ -f "$HOME/.claude/.credentials.json" ]; then
-              echo "Claude credentials: mounted from host"
-            else
-              echo "No Claude credentials found. Either:"
-              echo "  -e ANTHROPIC_API_KEY=sk-ant-...  (API key)"
-              echo "  -v ~/.claude:/home/.claude --userns=keep-id  (host credentials)"
-              exit 1
-            fi
-            git config --global user.name "dream-$(hostname)"
-            git config --global user.email "dream-$(hostname)@localhost"
-            # Restore Claude config if backup exists but main file is missing
-            if [ ! -f "$HOME/.claude.json" ] && [ -d "$HOME/.claude/backups" ]; then
-              BACKUP=$(ls -t "$HOME/.claude/backups/.claude.json.backup."* 2>/dev/null | head -1)
-              if [ -n "$BACKUP" ]; then
-                cp "$BACKUP" "$HOME/.claude.json"
-                echo "Restored Claude config from backup"
-              fi
-            fi
-            MAGIC=$((RANDOM % 200 + 1))
-            printf "Checking Claude (expect exit code %d)... " "$MAGIC"
-            CLAUDE_CODE=$(claude --print --model haiku "Write a C program that exits with code $MAGIC. Output only the code, no explanation." 2>&1)
-            TMPFILE="/tmp/claude-check-$$.c"
-            echo "$CLAUDE_CODE" | sed '/^```/d' > "$TMPFILE"
-            if clang -o /tmp/claude-check "$TMPFILE" 2>/dev/null && /tmp/claude-check; ACTUAL=$?; [ "$ACTUAL" = "$MAGIC" ]; then
-              echo "OK"
-            else
-              echo "FAILED (got $ACTUAL, expected $MAGIC)"
-              echo "$CLAUDE_CODE"
-              rm -f "$TMPFILE" /tmp/claude-check
-              exit 1
-            fi
-            rm -f "$TMPFILE" /tmp/claude-check
-            exec "$@"
-          '';
+          devEntrypoint = pkgs.writeShellScriptBin "entrypoint" (builtins.readFile ./scripts/docker-entrypoint.sh);
         in
           pkgs.dockerTools.buildLayeredImage {
             name = "${projectName}-dev";
@@ -142,6 +103,7 @@
                 pkgs.gh
                 pkgs.nodejs
                 pkgs.clang
+                pkgs.landrun
                 devEntrypoint
               ]
               ++ default.nativeBuildInputs ++ default.buildInputs;
@@ -162,7 +124,7 @@
 
             config = {
               User = "1000:1000";
-              Entrypoint = ["${pkgs.tini}/bin/tini" "--" "/bin/entrypoint"];
+              Entrypoint = ["/bin/entrypoint"];
               Cmd = ["node" "dist/main.js"];
               Env = ["DREAM_MODE_SOURCES=/app" "EXPO_OFFLINE=1" "BROWSER=none" "HOME=/home" "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt" "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-bundle.crt"];
               WorkingDir = "/app";
