@@ -96,6 +96,8 @@
                 echo "  -v ~/.claude:/home/.claude --userns=keep-id  (host credentials)"
                 exit 1
               fi
+              git config --global user.name "dream-$(hostname)"
+              git config --global user.email "dream-$(hostname)@localhost"
               exec "$@"
             '';
           in pkgs.dockerTools.buildLayeredImage {
