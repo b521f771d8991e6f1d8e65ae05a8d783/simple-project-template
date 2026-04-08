@@ -98,6 +98,15 @@
               fi
               git config --global user.name "dream-$(hostname)"
               git config --global user.email "dream-$(hostname)@localhost"
+              printf "Checking Claude... "
+              CLAUDE_CHECK=$(claude --print --model haiku "Write a C program that exits with a random number. Output code only." 2>&1)
+              if echo "$CLAUDE_CHECK" | grep -qE "int main|#include|rand\(\)|exit\("; then
+                echo "OK"
+              else
+                echo "FAILED"
+                echo "$CLAUDE_CHECK"
+                exit 1
+              fi
               exec "$@"
             '';
           in pkgs.dockerTools.buildLayeredImage {
@@ -132,7 +141,7 @@
               Cmd = [ "npm" "run" "dev" ];
               Env = [ "APP_MODE=develop" "EXPO_OFFLINE=1" "BROWSER=none" "HOME=/home" "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt" "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-bundle.crt" ];
               WorkingDir = "/app";
-              ExposedPorts = { "8081/tcp" = {}; };
+              ExposedPorts = { "8081/tcp" = {}; "19200-19999/tcp" = {}; };
               Volumes = { "/data" = {}; "/home/.claude" = {}; };
             };
           };
