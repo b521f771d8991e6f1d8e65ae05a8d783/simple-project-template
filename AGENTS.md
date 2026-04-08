@@ -8,9 +8,24 @@ Produce code that is **simple, fast, portable, secure, and reliable**:
 
 - **Simple**: every decision — architecture, UI, code, dependencies — must favor the simplest option that works. Fewer moving parts means fewer bugs, faster iteration, and easier onboarding. Prefer fewer files, fewer abstractions, fewer layers. A 10-line function is better than a 3-file abstraction hierarchy. Don't build for hypothetical futures — build for today.
 - **Fast**: no unnecessary work — no redundant re-renders, no blocking the event loop.
+  - *TypeScript*: wrap expensive derivations in `useMemo`/`useCallback`; use `React.memo` on pure components; use `FlatList` (not `ScrollView` + `.map()`) for lists; avoid inline object/array literals in JSX (new reference every render); batch Redux dispatches; never call synchronous FS or network APIs on the main thread — always `async/await`; lazy-load heavy screens with `React.lazy` or Expo Router's `+lazy` export.
+  - *Rust*: prefer stack allocation; use iterators over explicit loops; avoid `.clone()` on hot paths — pass references; use `#[inline]` on small, frequently called functions; reach for `rayon` for data-parallel workloads before writing manual threads; profile with `perf`/`cargo-flamegraph` before optimizing.
+  - *ObjC/C++*: avoid heap allocation in hot paths, prefer stack allocation; prefer value types over pointers where the size is known; keep Objective-C message sends out of tight loops — cache selectors or drop to C for inner loops.
+
 - **Portable**: works identically across web, Cloudflare Workers, and native mobile.
+  - *TypeScript*: never import `fs`, `path`, `child_process`, or `process.env` in shared/UI code — confine them to `src/server.ts` and files it owns; never import Node globals in `src/worker.ts`; use `Platform.OS` for platform branches in React Native; keep business logic free of both DOM and RN APIs so it can run in a Worker.
+  - *Rust*: compile to `cdylib` + `wasm-bindgen`; never call `std::fs`, `std::net`, or OS-specific syscalls from WASM-targeted code; use `web_sys`/`js_sys` for browser APIs; gate platform-specific code behind `#[cfg(target_arch = "wasm32")]`.
+  - *ObjC/C++*: isolate platform APIs (UIKit, Foundation, Win32) inside `src-native/`; never let native symbols leak into the JS/Rust layer — expose only through the Expo native module interface.
+
 - **Secure**: validate external input, never expose secrets, avoid injection vectors.
+  - *TypeScript*: parse and validate every external payload with [Zod](https://zod.dev) at the API boundary before touching the data; use parameterized queries — never build SQL/NoSQL queries by string concatenation; store secrets in environment variables, never in source or bundled assets; enforce strict CORS on the Express server; escape any user-supplied content before rendering it as text.
+  - *Rust*: use safe Rust by default; do not add unsafe code; validate all values crossing an FFI or WASM boundary before use; use the `secrecy` crate to wrap sensitive values so they don't accidentally appear in logs or `Debug` output.
+  - *ObjC/C++*: use bounded string functions (`strlcpy`, `snprintf`) — never `strcpy`/`gets`/`sprintf`; check every buffer index against its length; build debug targets with AddressSanitizer (`-fsanitize=address`) to catch overflows early.
+
 - **Reliable**: handle errors explicitly, no silent failures.
+  - *TypeScript*: every `Promise` must be awaited or have `.catch()` — unhandled rejections are bugs; type error states explicitly with discriminated unions (`{ ok: true; data: T } | { ok: false; error: string }`); never use an empty `catch {}` or `catch (e) { console.log(e) }` — either recover or rethrow with context; validate that external data matches the expected shape before using it.
+  - *Rust*: return `Result<T, E>` from all fallible functions; never call `.unwrap()` outside tests — use `.expect("reason")` with a meaningful message in application code, or propagate with `?`; use `thiserror` for library error types and `anyhow` for application-level error context.
+  - *ObjC/C++*: check every return value — `malloc`, system calls, and Objective-C init methods can all return null/nil; use RAII (`std::unique_ptr`, `@autoreleasepool`) to guarantee cleanup on every exit path; initialize all variables at declaration.
 
 # Nix & System Dependencies
 
@@ -103,6 +118,8 @@ All styling via **NativeWind** — Tailwind utility classes on the `className` p
 - **Rust** — performance-critical paths (heavy computation, data-intensive algorithms). Lives in [src-rust/](src-rust/), called via [src/lib/rust.ts](src/lib/rust.ts).
 - **C/C++/Objective-C** — native platform integration, Expo native modules, and bridging code that requires direct access to native frameworks, lives in [src-native/](src-native/) (UIKit, Foundation, CoreData, Win32, etc.).
 
+Only use rust and native if the relevant folders are available. Do not create them on your own
+
 # Project Structure
 
 | Path | Purpose |
@@ -129,13 +146,6 @@ All styling via **NativeWind** — Tailwind utility classes on the `className` p
 **Never use `devDependencies`.** All deps go in `dependencies`.
 
 Before adding anything new: check if [package.json](package.json), [Cargo.toml](Cargo.toml), or [flake.nix](flake.nix) already covers it. New deps must be widely adopted, actively maintained, from a trusted registry, and open-source licensed.
-
-# Build Verification
-
-```
-npm run lint          # always run before finishing a task
-nix flake check       # full reproducible build verification
-```
 
 # Git Conventions
 

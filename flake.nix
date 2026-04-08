@@ -79,35 +79,59 @@
             };
           };
 
-          # Dev Docker image — full source + node_modules for live development
-          docker-dev = pkgs.dockerTools.buildLayeredImage {
+          docker-dev = let
+            srcWithoutEnv = builtins.filterSource
+              (path: _: builtins.baseNameOf path != ".env") ./.;
+            devEntrypoint = pkgs.writeShellScriptBin "entrypoint" ''
+              export PATH="/app/node_modules/.bin:$PATH"
+              if [ -n "$ANTHROPIC_API_KEY" ]; then
+                KEY_PREVIEW="''${ANTHROPIC_API_KEY:0:12}...''${ANTHROPIC_API_KEY: -4}"
+                echo "Claude API key: $KEY_PREVIEW"
+                echo "Check balance:  https://console.anthropic.com/account/billing"
+              elif [ -f "$HOME/.claude/.credentials.json" ]; then
+                echo "Claude credentials: mounted from host"
+              else
+                echo "No Claude credentials found. Either:"
+                echo "  -e ANTHROPIC_API_KEY=sk-ant-...  (API key)"
+                echo "  -v ~/.claude:/home/.claude --userns=keep-id  (host credentials)"
+                exit 1
+              fi
+              exec "$@"
+            '';
+          in pkgs.dockerTools.buildLayeredImage {
             name = "${projectName}-dev";
             tag = version;
             
             contents = [
               pkgs.busybox
+              pkgs.cacert
               pkgs.nix
               pkgs.gh
               pkgs.nodejs
+              devEntrypoint
             ] ++ default.nativeBuildInputs ++ default.buildInputs;
 
             extraCommands = ''
               mkdir -p app tmp home
-              cp -r ${./.}/. app/
+              cp -r ${srcWithoutEnv}/. app/
               cp -r ${default.deps}/node_modules app/node_modules
+              
+              # put this here so that the files added above are also properly chmodded
               chmod -R a+rwX app tmp home
               mkdir -p etc
+
               printf '[safe]\n\tdirectory = *\n[init]\n\tdefaultBranch = main\n' > etc/gitconfig
               (cd app && ${pkgs.git}/bin/git init && ${pkgs.git}/bin/git add -A && ${pkgs.git}/bin/git -c user.name=nix -c user.email=nix commit -m "init" --quiet)
             '';
 
             config = {
               User = "1000:1000";
+              Entrypoint = [ "/bin/entrypoint" ];
               Cmd = [ "npm" "run" "dev" ];
-              Env = [ "APP_MODE=develop" "EXPO_OFFLINE=1" "BROWSER=none" "HOME=/home" ];
+              Env = [ "APP_MODE=develop" "EXPO_OFFLINE=1" "BROWSER=none" "HOME=/home" "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt" "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-bundle.crt" ];
               WorkingDir = "/app";
               ExposedPorts = { "8081/tcp" = {}; };
-              Volumes = { "/data" = {}; };
+              Volumes = { "/data" = {}; "/home/.claude" = {}; };
             };
           };
         }
