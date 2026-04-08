@@ -256,7 +256,7 @@ export async function POST(req: Request): Promise<Response> {
 						cloneDir, "--rw-home", "--", "claude", ...claudeArgs,
 					], {
 					cwd: cloneDir,
-					env: { ...process.env },
+					env: { ...process.env, PATH: `${cloneDir}/node_modules/.bin:${process.env.PATH}` },
 					stdio: ["ignore", "pipe", "pipe"],
 				});
 
@@ -337,7 +337,7 @@ export async function POST(req: Request): Promise<Response> {
 					cloneDir, "--", "npx", "expo", "start", "--web", "--port", String(port),
 				], {
 				cwd: cloneDir,
-				env: { ...process.env, DREAM_MODE_SOURCES: "", DREAM_PREVIEW: "1", BROWSER: "none" },
+				env: { ...process.env, PATH: `${cloneDir}/node_modules/.bin:${process.env.PATH}`, DREAM_MODE_SOURCES: "", DREAM_PREVIEW: "1", BROWSER: "none" },
 				stdio: ["ignore", "pipe", "pipe"],
 			});
 

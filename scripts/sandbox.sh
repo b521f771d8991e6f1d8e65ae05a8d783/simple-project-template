@@ -33,7 +33,7 @@ exec landrun \
   --best-effort \
   --rox /nix/store --rox /sbin --rox /bin \
   --ro /etc \
-  --rw "$WORKDIR" --rw /tmp \
+  --rwx "$WORKDIR" --rw /tmp \
   $EXTRA \
   --env PATH --env HOME \
   --env SSL_CERT_FILE --env NODE_EXTRA_CA_CERTS \
