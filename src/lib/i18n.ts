@@ -37,7 +37,7 @@ const en = {
 
 	"dream.title": "Dream Mode",
 	"dream.empty": "Describe what you want to change.\nThe app will modify itself in real-time.",
-	"dream.placeholder": "Describe a change. A screenshot of the app is included.",
+	"dream.placeholder": "Describe a change. A screenshot of the app will be attached.",
 	"dream.send": "Send",
 	"dream.keep": "Keep",
 	"dream.discard": "Discard",
