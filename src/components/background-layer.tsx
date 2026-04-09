@@ -3,7 +3,7 @@ import Svg, { Rect } from "react-native-svg";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useBackground } from "@/hooks/use-background";
 import { Colors } from "@/constants/theme";
-import { getPatternRenderer, getImageSource } from "@/lib/background-patterns";
+import { getPatternRenderer, getImageSource, getPatternColor } from "@/lib/background-patterns";
 
 const fillStyle = Platform.OS === "web"
 	? ({ position: "fixed" as any, inset: 0, zIndex: -1, width: "100%", height: "100%" })
@@ -42,7 +42,7 @@ export function BackgroundLayer() {
 			pointerEvents="none"
 		>
 			<Rect width="100%" height="100%" fill={bgColor} />
-			{renderer?.(c.accent)}
+			{renderer?.(getPatternColor(color, c.accent))}
 		</Svg>
 	);
 }

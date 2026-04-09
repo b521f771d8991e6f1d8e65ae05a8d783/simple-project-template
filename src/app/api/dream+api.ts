@@ -1,10 +1,11 @@
 import { spawn, execFile } from "child_process";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { promisify } from "util";
 import * as net from "net";
 import { DatabaseSync as Database } from "node:sqlite";
 import { deferTask } from "expo-server";
+import { createTransport } from "nodemailer";
 
 const exec = promisify(execFile);
 
@@ -12,7 +13,7 @@ let systemPrompt: string;
 try {
 	systemPrompt = readFileSync(join(process.cwd(), "src/app/api/dream-system-prompt.txt"), "utf-8");
 } catch {
-	systemPrompt = "You are Dream Mode. Respect .do-not-edit. Be conservative. Only modify files under src/.";
+	systemPrompt = "You are Dream Mode. Be conservative. Only modify files under src/.";
 }
 
 const cwd = process.cwd();
@@ -84,9 +85,10 @@ async function cleanupJob(id: string) {
 }
 
 export async function POST(req: Request): Promise<Response> {
-	const appMode = (process.env.APP_MODE ?? "develop").toLowerCase();
-	if (appMode !== "dream" && appMode !== "develop") {
-		return Response.json({ error: `Dream Mode is disabled (APP_MODE=${appMode})` }, { status: 403 });
+	const repoSource = process.env.DREAM_MODE_SOURCES
+		?? (existsSync(join(cwd, "package.json")) && existsSync(join(cwd, ".git")) ? cwd : null);
+	if (!repoSource) {
+		return Response.json({ error: "Dream mode disabled. Set DREAM_MODE_SOURCES to a source directory." }, { status: 403 });
 	}
 
 	const { prompt, screenshot, pollJobId, action, commitHash, jobId: actionJobId } = await req.json();
@@ -109,56 +111,64 @@ export async function POST(req: Request): Promise<Response> {
 		return Response.json({ jobs });
 	}
 
-	// ── List recent dream commits ──────────────────────────────
-	if (action === "listCommits") {
-		try {
-			const { stdout } = await git("log", "--oneline", "--grep=dream:", "-20", "--format=%H|%s|%ar");
-			const commits = stdout.trim().split("\n").filter(Boolean).map((line: string) => {
-				const [hash, ...rest] = line.split("|");
-				const msg = rest.slice(0, -1).join("|");
-				const ago = rest[rest.length - 1];
-				return { hash, message: msg, ago };
-			});
-			return Response.json({ commits });
-		} catch {
-			return Response.json({ commits: [] });
-		}
-	}
-
-	// ── Revert to a specific commit ────────────────────────────
-	if (action === "revert" && commitHash) {
-		try {
-			await git("revert", "--no-commit", commitHash);
-			await git("commit", "-m", `dream: revert ${commitHash.slice(0, 8)}`);
-			return Response.json({ summary: `Reverted commit ${commitHash.slice(0, 8)}` });
-		} catch (err: unknown) {
-			await git("revert", "--abort").catch(() => {});
-			return Response.json({ error: err instanceof Error ? err.message : "Revert failed" }, { status: 500 });
-		}
-	}
-
-	// ── Accept: cherry-pick clone commits into main repo ───────
+	// ── Accept: email diff to developer ───────────────────────
 	if (action === "accept" && actionJobId) {
 		const row = dbGet(actionJobId);
 		if (!row) return Response.json({ error: "Job not found" }, { status: 404 });
 		if (row.status !== "preview") return Response.json({ error: "Job is not in preview state" }, { status: 400 });
 
+		const developerEmail = process.env.DEVELOPER_EMAIL;
+		const smtpUrl = process.env.SMTP_URL;
+
 		dbSet(actionJobId, { status: "accepting" });
 		const cloneDir = row.clone_dir as string;
 
 		try {
-			if (row.dev_server_pid) {
-				try { process.kill(row.dev_server_pid as number, "SIGTERM"); } catch { /* ignore */ }
+			// Generate diff against the main repo's HEAD
+			const { stdout: diff } = await gitIn(cloneDir, "diff", "HEAD~1", "HEAD");
+
+			if (developerEmail && smtpUrl) {
+				// Compress with xz
+				const xzDiff = await new Promise<Buffer>((resolve, reject) => {
+					const xz = spawn("xz", ["-9"], { stdio: ["pipe", "pipe", "pipe"] });
+					const chunks: Buffer[] = [];
+					xz.stdout.on("data", (c: Buffer) => chunks.push(c));
+					xz.on("close", (code) => code === 0 ? resolve(Buffer.concat(chunks)) : reject(new Error(`xz exited ${code}`)));
+					xz.on("error", reject);
+					xz.stdin.end(diff);
+				});
+
+				// Send email
+				const transport = createTransport(smtpUrl);
+				await transport.sendMail({
+					to: developerEmail,
+					subject: `Dream suggestion: ${row.summary?.slice(0, 72) ?? actionJobId}`,
+					text: [
+						`A user suggested changes via Dream Mode.`,
+						``,
+						`Job: ${actionJobId}`,
+						`Summary: ${row.summary ?? "(none)"}`,
+						``,
+						`The diff is attached as an xz-compressed patch file.`,
+						`Apply with: xzcat dream.patch.xz | git apply`,
+					].join("\n"),
+					attachments: [{
+						filename: "dream.patch.xz",
+						content: xzDiff,
+					}],
+				});
+				console.log(`[Dream] ${actionJobId} diff emailed to ${developerEmail}`);
+			} else {
+				// No email configured — print diff to stdout
+				console.log(`[Dream] ${actionJobId} — DEVELOPER_EMAIL not set, printing diff to stdout:`);
+				console.log(diff);
 			}
-			await git("fetch", cloneDir, "HEAD:refs/dream/temp");
-			await git("cherry-pick", "refs/dream/temp");
-			await git("update-ref", "-d", "refs/dream/temp");
-			try { await exec("rm", ["-rf", cloneDir]); } catch { /* ignore */ }
-			dbSet(actionJobId, { status: "done", clone_dir: null, dev_server_pid: null, finished_at: Date.now() / 1000 | 0 });
-			return Response.json({ summary: row.summary ?? "Changes applied." });
+
+			// Cleanup
+			await cleanupJob(actionJobId);
+			dbSet(actionJobId, { status: "done", finished_at: Date.now() / 1000 | 0 });
+			return Response.json({ summary: developerEmail ? "Your suggestion has been sent to the developer! 🎉 Thanks for sharing your awesome idea!" : "Your suggestion has been logged! 🚀 Thanks for dreaming big with us!" });
 		} catch (err) {
-			await git("cherry-pick", "--abort").catch(() => {});
-			await git("update-ref", "-d", "refs/dream/temp").catch(() => {});
 			const error = err instanceof Error ? err.message : String(err);
 			dbSet(actionJobId, { status: "error", error, finished_at: Date.now() / 1000 | 0 });
 			return Response.json({ error }, { status: 500 });
@@ -214,13 +224,9 @@ export async function POST(req: Request): Promise<Response> {
 
 		try {
 			// 1. Clone the repo locally (hardlinks, fast)
-			await exec("git", ["clone", "--local", cwd, cloneDir]);
-			dbAppendLog(jobId, "Repository cloned. Symlinking node_modules...");
-
-			// 2. Install dependencies (bun uses global cache, fast)
-			dbAppendLog(jobId, "Installing dependencies...");
-			// npm ci ensures a clean, reproducible install from package-lock.json — do not replace with npm install
-			await exec("npm", ["ci"], { cwd: cloneDir });
+			await exec("git", ["clone", "--no-local", repoSource, cloneDir]);
+			dbAppendLog(jobId, "Copying dependencies...");
+			await exec("cp", ["-r", join(repoSource, "node_modules"), join(cloneDir, "node_modules")]);
 			dbAppendLog(jobId, "Starting Claude Code...");
 
 			// 3. Run Claude Code in the clone
@@ -248,7 +254,7 @@ export async function POST(req: Request): Promise<Response> {
 			await new Promise<void>((resolve, reject) => {
 				const proc = spawn("claude", claudeArgs, {
 					cwd: cloneDir,
-					env: { ...process.env },
+					env: { ...process.env, PATH: `${cloneDir}/node_modules/.bin:${process.env.PATH}` },
 					stdio: ["ignore", "pipe", "pipe"],
 				});
 
@@ -325,9 +331,11 @@ export async function POST(req: Request): Promise<Response> {
 			const port = await findFreePort();
 			const previewUrl = `http://localhost:${port}`;
 
-			const devServer = spawn("npx", ["expo", "start", "--web", "--port", String(port)], {
+			const devServer = spawn("npx", [
+					"expo", "start", "--web", "--port", String(port),
+				], {
 				cwd: cloneDir,
-				env: { ...process.env, APP_MODE: "develop", BROWSER: "none" },
+				env: { ...process.env, PATH: `${cloneDir}/node_modules/.bin:${process.env.PATH}`, DREAM_MODE_SOURCES: "", DREAM_PREVIEW: "1", BROWSER: "none" },
 				stdio: ["ignore", "pipe", "pipe"],
 			});
 

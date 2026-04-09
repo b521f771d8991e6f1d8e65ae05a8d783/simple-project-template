@@ -3,8 +3,8 @@ import { ScrollView, View, Text, Pressable, TextInput, StyleSheet, Image } from 
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useBackground } from "@/hooks/use-background";
-import { PATTERN_OPTIONS, COLOR_PRESETS, IMAGE_PRESETS, getPatternRenderer } from "@/lib/background-patterns";
-import { useAppDispatch } from "@/redux/store";
+import { PATTERN_OPTIONS, COLOR_PRESETS, IMAGE_PRESETS, getPatternRenderer, getPatternColor } from "@/lib/background-patterns";
+import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { setThemeMode } from "@/redux/state/themeSlice";
 import Svg, { Rect as SvgRect } from "react-native-svg";
 import { ThemedText } from "@/components/themed-text";
@@ -43,6 +43,7 @@ export default function GalleryScreen() {
 	const dark = colorScheme === "dark";
 	const bg = useBackground();
 	const dispatch = useAppDispatch();
+	const themeMode = useAppSelector((s) => s.theme.mode);
 	const [toggle1, setToggle1] = useState(true);
 	const [toggle2, setToggle2] = useState(false);
 	const [check1, setCheck1] = useState(true);
@@ -321,148 +322,166 @@ export default function GalleryScreen() {
 			{/* ── Background ───────────────────────────────────── */}
 			<View style={styles.section}>
 				<SectionHeader color={c.textSecondary}>Background</SectionHeader>
+				<LiquidGlass style={styles.typeCard}>
 
-				{/* Image */}
-				<LiquidGlass style={styles.card}>
-					<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 10 }]}>Image</Text>
-					<View style={styles.imageGrid}>
-						<Pressable
-							onPress={() => bg.setImage(null)}
-							style={[
-								styles.imageTile,
-								{
-									borderColor: !bg.image ? c.accent : c.border,
-									borderWidth: !bg.image ? 2 : StyleSheet.hairlineWidth,
-									backgroundColor: c.backgroundSecondary,
-									justifyContent: "center",
-									alignItems: "center",
-								},
-							]}
-						>
-							<Text style={[styles.bgLabel, { color: !bg.image ? c.accent : c.textSecondary }]}>None</Text>
-						</Pressable>
-						{IMAGE_PRESETS.map((preset) => {
-							const active = bg.image === preset.key;
-							return (
-								<Pressable
-									key={preset.key}
-									onPress={() => bg.setImage(preset.key)}
-									style={[
-										styles.imageTile,
-										{
-											borderColor: active ? c.accent : c.border,
-											borderWidth: active ? 2 : StyleSheet.hairlineWidth,
-											overflow: "hidden",
-										},
-									]}
-								>
-									<Image
-										source={preset.source}
-										style={StyleSheet.absoluteFill}
-										resizeMode="cover"
-									/>
-									<Text style={[styles.bgLabel, { color: "#fff", textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }]}>
-										{preset.label}
-									</Text>
-								</Pressable>
-							);
-						})}
+					{/* Appearance toggle */}
+					<View style={[styles.toggleRow, { paddingHorizontal: 4 }]}>
+						<Text style={[styles.toggleLabel, { color: c.text }]}>Dark Mode</Text>
+						<Toggle
+							value={themeMode === "dark"}
+							onValueChange={(on) => dispatch(setThemeMode(on ? "dark" : "light"))}
+						/>
 					</View>
-				</LiquidGlass>
 
-				{/* Color */}
-				<LiquidGlass style={styles.card}>
-					<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 10 }]}>Color</Text>
-					<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 8 }]}>Light</Text>
-					<View style={styles.bgGrid}>
-						{COLOR_PRESETS.filter((p) => !p.dark).map((preset) => {
-							const active = bg.color === preset.value;
-							const display = preset.value ?? c.background;
-							return (
-								<View key={preset.label} style={styles.colorItem}>
+					<Divider />
+
+					{/* Image */}
+					<View style={styles.bgSubSection}>
+						<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 10 }]}>Image</Text>
+						<View style={styles.imageGrid}>
+							<Pressable
+								onPress={() => bg.setImage(null)}
+								style={[
+									styles.imageTile,
+									{
+										borderColor: !bg.image ? c.accent : c.border,
+										borderWidth: !bg.image ? 2 : StyleSheet.hairlineWidth,
+										backgroundColor: c.backgroundSecondary,
+										justifyContent: "center",
+										alignItems: "center",
+									},
+								]}
+							>
+								<Text style={[styles.bgLabel, { color: !bg.image ? c.accent : c.textSecondary }]}>None</Text>
+							</Pressable>
+							{IMAGE_PRESETS.map((preset) => {
+								const active = bg.image === preset.key;
+								return (
 									<Pressable
-										onPress={() => { bg.setImage(null); bg.setColor(preset.value); dispatch(setThemeMode("light")); }}
+										key={preset.key}
+										onPress={() => bg.setImage(preset.key)}
 										style={[
-											styles.colorTile,
+											styles.imageTile,
 											{
-												backgroundColor: display,
 												borderColor: active ? c.accent : c.border,
 												borderWidth: active ? 2 : StyleSheet.hairlineWidth,
+												overflow: "hidden",
 											},
 										]}
-									/>
-									<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
-										{preset.label}
-									</Text>
-								</View>
-							);
-						})}
-					</View>
-					<Text style={[styles.typeLabel, { color: c.textSecondary, marginTop: 16, marginBottom: 8 }]}>Dark</Text>
-					<View style={styles.bgGrid}>
-						{COLOR_PRESETS.filter((p) => p.dark).map((preset) => {
-							const active = bg.color === preset.value;
-							return (
-								<View key={preset.label} style={styles.colorItem}>
-									<Pressable
-										onPress={() => { bg.setImage(null); bg.setColor(preset.value); dispatch(setThemeMode("dark")); }}
-										style={[
-											styles.colorTile,
-											{
-												backgroundColor: preset.value!,
-												borderColor: active ? c.accent : "rgba(255,255,255,0.15)",
-												borderWidth: active ? 2 : 1,
-											},
-										]}
-									/>
-									<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
-										{preset.label}
-									</Text>
-								</View>
-							);
-						})}
-					</View>
-				</LiquidGlass>
-
-				{/* Pattern */}
-				<LiquidGlass style={styles.card}>
-					<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 10 }]}>Pattern</Text>
-					<View style={styles.bgGrid}>
-						{PATTERN_OPTIONS.map((opt) => {
-							const active = bg.pattern === opt.key;
-							const renderer = getPatternRenderer(opt.key);
-							return (
-								<Pressable
-									key={opt.key}
-									onPress={() => { bg.setImage(null); bg.setPattern(opt.key); }}
-									style={[
-										styles.bgTile,
-										{
-											borderColor: active ? c.accent : c.border,
-											borderWidth: active ? 2 : StyleSheet.hairlineWidth,
-											backgroundColor: bg.color ?? c.background,
-										},
-									]}
-								>
-									{renderer && (
-										<Svg
-											width="100%"
-											height="100%"
-											viewBox="0 0 70 70"
+									>
+										<Image
+											source={preset.source}
 											style={StyleSheet.absoluteFill}
-											pointerEvents="none"
-										>
-											<SvgRect width="100%" height="100%" fill={bg.color ?? c.background} />
-											{renderer(c.accent)}
-										</Svg>
-									)}
-									<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
-										{opt.label}
-									</Text>
-								</Pressable>
-							);
-						})}
+											resizeMode="cover"
+										/>
+										<Text style={[styles.bgLabel, { color: "#fff", textShadowColor: "rgba(0,0,0,0.7)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 }]}>
+											{preset.label}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
 					</View>
+
+					<Divider />
+
+					{/* Color */}
+					<View style={styles.bgSubSection}>
+						<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 10 }]}>Color</Text>
+						<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 8 }]}>Light</Text>
+						<View style={styles.bgGrid}>
+							{COLOR_PRESETS.filter((p) => !p.dark).map((preset) => {
+								const active = bg.color === preset.value;
+								const display = preset.value ?? c.background;
+								return (
+									<View key={preset.label} style={styles.colorItem}>
+										<Pressable
+											onPress={() => { bg.setImage(null); bg.setColor(preset.value); dispatch(setThemeMode("light")); }}
+											style={[
+												styles.colorTile,
+												{
+													backgroundColor: display,
+													borderColor: active ? c.accent : c.border,
+													borderWidth: active ? 2 : StyleSheet.hairlineWidth,
+												},
+											]}
+										/>
+										<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
+											{preset.label}
+										</Text>
+									</View>
+								);
+							})}
+						</View>
+						<Text style={[styles.typeLabel, { color: c.textSecondary, marginTop: 16, marginBottom: 8 }]}>Dark</Text>
+						<View style={styles.bgGrid}>
+							{COLOR_PRESETS.filter((p) => p.dark).map((preset) => {
+								const active = bg.color === preset.value;
+								return (
+									<View key={preset.label} style={styles.colorItem}>
+										<Pressable
+											onPress={() => { bg.setImage(null); bg.setColor(preset.value); dispatch(setThemeMode("dark")); }}
+											style={[
+												styles.colorTile,
+												{
+													backgroundColor: preset.value!,
+													borderColor: active ? c.accent : "rgba(255,255,255,0.15)",
+													borderWidth: active ? 2 : 1,
+												},
+											]}
+										/>
+										<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
+											{preset.label}
+										</Text>
+									</View>
+								);
+							})}
+						</View>
+					</View>
+
+					<Divider />
+
+					{/* Pattern */}
+					<View style={styles.bgSubSection}>
+						<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 10 }]}>Pattern</Text>
+						<View style={styles.bgGrid}>
+							{PATTERN_OPTIONS.map((opt) => {
+								const active = bg.pattern === opt.key;
+								const renderer = getPatternRenderer(opt.key);
+								return (
+									<Pressable
+										key={opt.key}
+										onPress={() => { bg.setImage(null); bg.setPattern(opt.key); }}
+										style={[
+											styles.bgTile,
+											{
+												borderColor: active ? c.accent : c.border,
+												borderWidth: active ? 2 : StyleSheet.hairlineWidth,
+												backgroundColor: bg.color ?? c.background,
+											},
+										]}
+									>
+										{renderer && (
+											<Svg
+												width="100%"
+												height="100%"
+												viewBox="0 0 70 70"
+												style={StyleSheet.absoluteFill}
+												pointerEvents="none"
+											>
+												<SvgRect width="100%" height="100%" fill={bg.color ?? c.background} />
+												{renderer(getPatternColor(bg.color, c.accent))}
+											</Svg>
+										)}
+										<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
+											{opt.label}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
+					</View>
+
 				</LiquidGlass>
 			</View>
 
@@ -652,6 +671,9 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 
+	bgSubSection: {
+		paddingVertical: 8,
+	},
 	imageGrid: {
 		flexDirection: "row",
 		flexWrap: "wrap",

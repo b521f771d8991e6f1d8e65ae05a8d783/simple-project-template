@@ -273,6 +273,26 @@ export function getImageSource(key: string): ReturnType<typeof require> | null {
 	return IMAGE_PRESETS.find((p) => p.key === key)?.source ?? null;
 }
 
+/** Dark preset backgrounds — pattern uses low-opacity white. */
+const DARK_BG_COLORS = new Set([
+	"#4a4a52", "#52525b", "#3d5166", "#3a5244", "#5b4a6e", "#2e4f6e",
+]);
+
+/** Vivid/saturated backgrounds (e.g. Austrian Red) — pattern uses higher-opacity white. */
+const VIVID_BG_COLORS = new Set(["#c8102e"]);
+
+/**
+ * Returns the color to use for SVG pattern nodes/lines.
+ * Uses white when the background is dark or vivid so the pattern remains visible.
+ */
+export function getPatternColor(bgColor: string | null, accentColor: string): string {
+	if (!bgColor) return accentColor;
+	const lower = bgColor.toLowerCase();
+	if (VIVID_BG_COLORS.has(lower)) return "rgba(255,255,255,0.75)";
+	if (DARK_BG_COLORS.has(lower)) return "rgba(255,255,255,0.45)";
+	return accentColor;
+}
+
 export const COLOR_PRESETS: { label: string; value: string | null; dark?: boolean }[] = [
 	// Light
 	{ label: "Whispering White",  value: "#ffffff" },
@@ -290,6 +310,7 @@ export const COLOR_PRESETS: { label: string; value: string | null; dark?: boolea
 	{ label: "Lovely Linen",      value: "#faf5ef" },
 	{ label: "Sunlit Sand",       value: "#f5f0e8" },
 	{ label: "Stellar Steel",     value: "#d6e8f7" },
+	{ label: "Austrian Red",      value: "#c8102e" },
 	// Dark
 	{ label: "Grounded Graphite", value: "#4a4a52", dark: true },
 	{ label: "Cool Charcoal",   value: "#52525b", dark: true },

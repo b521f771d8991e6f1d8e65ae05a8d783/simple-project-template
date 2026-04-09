@@ -17,6 +17,8 @@ name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
+    tags:
+      - "v*"
   pull_request:
 
 jobs:
@@ -68,4 +70,43 @@ jobs:
           name: result-cloudflare-worker-rapid-release
           path: dist/
           if-no-files-found: error
+
+  build-docker-images:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@main
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - run: nix build .#docker --out-link result-prod
+      - run: nix build .#docker-dev --out-link result-dev
+
+      - name: Log in to GHCR 🔑
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Load and push docker image 🚀
+        run: |
+          docker load < result-prod
+          SHORT_SHA="${GITHUB_SHA::7}"
+          GHCR_IMAGE="ghcr.io/${{ github.repository }}"
+          LOADED_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | head -1)
+          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:$SHORT_SHA"
+          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:latest"
+          docker push "$GHCR_IMAGE:$SHORT_SHA"
+          docker push "$GHCR_IMAGE:latest"
+
+      - name: Load and push docker-dev image 🚀
+        run: |
+          docker load < result-dev
+          SHORT_SHA="${GITHUB_SHA::7}"
+          GHCR_IMAGE="ghcr.io/${{ github.repository }}-dev"
+          LOADED_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -v "^ghcr.io" | head -1)
+          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:$SHORT_SHA"
+          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:latest"
+          docker push "$GHCR_IMAGE:$SHORT_SHA"
+          docker push "$GHCR_IMAGE:latest"
 
