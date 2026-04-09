@@ -22,6 +22,7 @@ function LanguageProvider({ children }: PropsWithChildren) {
 
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   document.title = Constants.expoConfig?.name!;
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 SplashScreen.preventAutoHideAsync();

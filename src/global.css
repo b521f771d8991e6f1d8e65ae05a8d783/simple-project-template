@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Disable context menu globally */
+* {
+  -webkit-touch-callout: none;
+}
+
+/* Prevent text selection everywhere except interactive inputs */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+}

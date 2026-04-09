@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { ScrollView, View, Text, Pressable, StyleSheet } from "react-native";
+import { ScrollView, View, Text, Pressable, TextInput, StyleSheet } from "react-native";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useBackground } from "@/hooks/use-background";
 import { PATTERN_OPTIONS, COLOR_PRESETS, getPatternRenderer } from "@/lib/background-patterns";
+import { useAppDispatch } from "@/redux/store";
+import { setThemeMode } from "@/redux/state/themeSlice";
 import Svg, { Rect as SvgRect } from "react-native-svg";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Collapsible } from "@/components/ui/collapsible";
+import { Divider } from "@/components/ui/divider";
 import { LiquidGlass } from "@/components/ui/liquid-glass";
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
@@ -35,11 +38,15 @@ export default function GalleryScreen() {
 	const c = Colors[colorScheme];
 	const dark = colorScheme === "dark";
 	const bg = useBackground();
+	const dispatch = useAppDispatch();
 	const [toggle1, setToggle1] = useState(true);
 	const [toggle2, setToggle2] = useState(false);
 	const [check1, setCheck1] = useState(true);
 	const [check2, setCheck2] = useState(false);
 	const [check3, setCheck3] = useState(true);
+	const [textVal, setTextVal] = useState("");
+	const [multiVal, setMultiVal] = useState("");
+	const [passVal, setPassVal] = useState("");
 	return (
 		<ScrollView
 			style={{ flex: 1, backgroundColor: (bg.pattern !== "none" || bg.color) ? "transparent" : c.background }}
@@ -76,22 +83,22 @@ export default function GalleryScreen() {
 					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Title</Text>
 					<ThemedText type="title">The quick brown fox</ThemedText>
 				</View>
-				<View style={[styles.typeDivider, { backgroundColor: c.border }]} />
+				<Divider />
 				<View style={styles.typeRow}>
 					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Subtitle</Text>
 					<ThemedText type="subtitle">The quick brown fox</ThemedText>
 				</View>
-				<View style={[styles.typeDivider, { backgroundColor: c.border }]} />
+				<Divider />
 				<View style={styles.typeRow}>
 					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Headline</Text>
 					<ThemedText type="headline">The quick brown fox</ThemedText>
 				</View>
-				<View style={[styles.typeDivider, { backgroundColor: c.border }]} />
+				<Divider />
 				<View style={styles.typeRow}>
 					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Body</Text>
 					<ThemedText type="body">The quick brown fox jumps over the lazy dog.</ThemedText>
 				</View>
-				<View style={[styles.typeDivider, { backgroundColor: c.border }]} />
+				<Divider />
 				<View style={styles.typeRow}>
 					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Caption</Text>
 					<ThemedText type="caption" style={{ color: c.textSecondary }}>The quick brown fox jumps over the lazy dog.</ThemedText>
@@ -117,7 +124,7 @@ export default function GalleryScreen() {
 							</View>
 						</View>
 						{i < arr.length - 1 && (
-							<View style={[styles.typeDivider, { backgroundColor: c.border }]} />
+							<Divider />
 						)}
 					</View>
 				))}
@@ -207,6 +214,53 @@ export default function GalleryScreen() {
 				</Collapsible>
 			</LiquidGlass>
 
+			{/* ── Text Inputs ──────────────────────────────────── */}
+			<LiquidGlass title="Text Inputs" style={styles.typeCard}>
+				<View style={styles.inputGroup}>
+					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Single line</Text>
+					<TextInput
+						value={textVal}
+						onChangeText={setTextVal}
+						placeholder="Type something…"
+						placeholderTextColor={c.textSecondary}
+						style={[styles.textInput, { color: c.text, backgroundColor: dark ? "#2c2c2e" : "#f0f0f0" }]}
+					/>
+				</View>
+				<Divider />
+				<View style={styles.inputGroup}>
+					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Multiline</Text>
+					<TextInput
+						value={multiVal}
+						onChangeText={setMultiVal}
+						placeholder="Type multiple lines…"
+						placeholderTextColor={c.textSecondary}
+						style={[styles.textInput, styles.textArea, { color: c.text, backgroundColor: dark ? "#2c2c2e" : "#f0f0f0" }]}
+						multiline
+					/>
+				</View>
+				<Divider />
+				<View style={styles.inputGroup}>
+					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Password</Text>
+					<TextInput
+						value={passVal}
+						onChangeText={setPassVal}
+						placeholder="Password"
+						placeholderTextColor={c.textSecondary}
+						secureTextEntry
+						style={[styles.textInput, { color: c.text, backgroundColor: dark ? "#2c2c2e" : "#f0f0f0" }]}
+					/>
+				</View>
+				<Divider />
+				<View style={styles.inputGroup}>
+					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Disabled</Text>
+					<TextInput
+						value="Cannot edit this"
+						editable={false}
+						style={[styles.textInput, { color: c.textSecondary, backgroundColor: dark ? "#1c1c1e" : "#e8e8e8" }]}
+					/>
+				</View>
+			</LiquidGlass>
+
 			{/* ── ThemedView ───────────────────────────────────── */}
 			<LiquidGlass title="ThemedView" style={styles.card}>
 				<ThemedView style={styles.themedViewDemo}>
@@ -233,20 +287,45 @@ export default function GalleryScreen() {
 
 			{/* ── Background Color ────────────────────────────── */}
 			<LiquidGlass title="Background Color" style={styles.card}>
+				<Text style={[styles.typeLabel, { color: c.textSecondary, marginBottom: 8 }]}>Light</Text>
 				<View style={styles.bgGrid}>
-					{COLOR_PRESETS.map((preset) => {
+					{COLOR_PRESETS.filter((p) => !p.dark).map((preset) => {
 						const active = bg.color === preset.value;
 						const display = preset.value ?? c.background;
 						return (
 							<View key={preset.label} style={styles.colorItem}>
 								<Pressable
-									onPress={() => bg.setColor(preset.value)}
+									onPress={() => { bg.setColor(preset.value); dispatch(setThemeMode("light")); }}
 									style={[
 										styles.colorTile,
 										{
 											backgroundColor: display,
 											borderColor: active ? c.accent : c.border,
 											borderWidth: active ? 2 : StyleSheet.hairlineWidth,
+										},
+									]}
+								/>
+								<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
+									{preset.label}
+								</Text>
+							</View>
+						);
+					})}
+				</View>
+				<Text style={[styles.typeLabel, { color: c.textSecondary, marginTop: 16, marginBottom: 8 }]}>Dark</Text>
+				<View style={styles.bgGrid}>
+					{COLOR_PRESETS.filter((p) => p.dark).map((preset) => {
+						const active = bg.color === preset.value;
+						return (
+							<View key={preset.label} style={styles.colorItem}>
+								<Pressable
+									onPress={() => { bg.setColor(preset.value); dispatch(setThemeMode("dark")); }}
+									style={[
+										styles.colorTile,
+										{
+											backgroundColor: preset.value!,
+											borderColor: active ? c.accent : "rgba(255,255,255,0.15)",
+											borderWidth: active ? 2 : 1,
 										},
 									]}
 								/>
@@ -353,11 +432,9 @@ const styles = StyleSheet.create({
 	},
 	typeCard: {
 		gap: 0,
-		padding: 0,
 		overflow: "hidden",
 	},
 	typeRow: {
-		paddingHorizontal: 16,
 		paddingVertical: 14,
 		gap: 2,
 	},
@@ -367,14 +444,9 @@ const styles = StyleSheet.create({
 		letterSpacing: 0.4,
 		textTransform: "uppercase",
 	},
-	typeDivider: {
-		height: StyleSheet.hairlineWidth,
-		marginHorizontal: 16,
-	},
 	btnRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		paddingHorizontal: 16,
 		paddingVertical: 12,
 		gap: 8,
 	},
@@ -500,5 +572,19 @@ const styles = StyleSheet.create({
 		fontSize: 10,
 		fontWeight: "500",
 		zIndex: 1,
+	},
+	inputGroup: {
+		paddingVertical: 14,
+		gap: 8,
+	},
+	textInput: {
+		borderRadius: 10,
+		paddingHorizontal: 12,
+		paddingVertical: 10,
+		fontSize: 15,
+	},
+	textArea: {
+		minHeight: 72,
+		textAlignVertical: "top",
 	},
 });

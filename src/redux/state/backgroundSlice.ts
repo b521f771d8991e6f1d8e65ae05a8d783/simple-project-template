@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { Appearance } from "react-native";
 
 export type BackgroundPattern =
 	| "none" | "dots" | "grid" | "waves" | "diagonal" | "circuit"
@@ -11,10 +12,10 @@ interface BackgroundState {
 	color: string | null;
 }
 
-const initialState: BackgroundState = {
-	pattern: "none",
-	color: null,
-};
+const isDark = Appearance.getColorScheme() === "dark";
+const initialState: BackgroundState = isDark
+	? { pattern: "circuit", color: "#4a4a52" }
+	: { pattern: "circuit", color: "#f5f5f7" };
 
 export const backgroundSlice = createSlice({
 	name: "background",

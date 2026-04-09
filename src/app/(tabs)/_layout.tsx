@@ -4,7 +4,18 @@ import { View, Pressable, Text, StyleSheet, Platform, Modal } from "react-native
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
 
+if (Platform.OS === "web" && typeof document !== "undefined") {
+	const id = "glass-pill-hover-style";
+	if (!document.getElementById(id)) {
+		const s = document.createElement("style");
+		s.id = id;
+		s.textContent = ".glass-pill-wide,.glass-pill-sm{transition:transform .18s cubic-bezier(.34,1.56,.64,1)}.glass-pill-wide:hover{transform:scale(1.06)}.glass-pill-sm:hover{transform:scale(1.18)}";
+		document.head.appendChild(s);
+	}
+}
+
 import { DreamPanel } from "@/components/dream-panel";
+import { APP_VERSION } from "@/lib/version";
 import { LANGUAGES } from "@/components/language-selector";
 import { Logo } from "@/components/logo";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -12,8 +23,9 @@ import { useTranslation } from "@/lib/i18n";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
-import { toggleTheme, toggleNavPosition } from "@/redux/state/themeSlice";
+import { toggleNavPosition, setThemeMode } from "@/redux/state/themeSlice";
 import { setLanguage } from "@/redux/state/languageSlice";
+import { setBackgroundPattern, setBackgroundColor } from "@/redux/state/backgroundSlice";
 
 type AppMode = "develop" | "dream" | "freeze";
 
@@ -81,12 +93,17 @@ function NavBar({
 	return (
 		<View style={styles.navBarWrapper}>
 		<View style={[styles.navBar, positionStyle]}>
-			<View style={[styles.glassPill, glassStyle]}>
+			<View className="glass-pill glass-pill-wide" style={[styles.glassPill, glassStyle]}>
 				<View style={styles.logo}>
 					<Logo size={24} color={c.text} />
-					<Text style={[styles.appName, { color: c.text }]}>
-						{Constants.expoConfig?.name ?? "App"}
-					</Text>
+					<View style={{ gap: 0 }}>
+						<Text style={[styles.appName, { color: c.text }]}>
+							{Constants.expoConfig?.name ?? "App"}
+						</Text>
+						<Text style={[styles.appVersion, { color: c.textSecondary }]}>
+							v{APP_VERSION}
+						</Text>
+					</View>
 				</View>
 				{state.routes.map((route, index) => {
 					if (hiddenRoutes.has(route.name)) return null;
@@ -117,7 +134,7 @@ function NavBar({
 				})}
 			</View>
 			<View style={{ flex: 1 }} />
-			<View style={[styles.glassPill, glassStyle]}>
+			<View className="glass-pill glass-pill-sm" style={[styles.glassPill, glassStyle]}>
 				<Pressable onPress={() => setMenuOpen(true)} style={styles.iconBtn}>
 					<Text style={{ fontSize: 20, color: c.icon }}>⋮</Text>
 				</Pressable>
@@ -178,7 +195,17 @@ function NavBar({
 						</View>
 					)}
 					<Pressable
-						onPress={() => dispatch(toggleTheme())}
+						onPress={() => {
+							if (colorScheme === "dark") {
+								dispatch(setThemeMode("light"));
+								dispatch(setBackgroundPattern("circuit"));
+								dispatch(setBackgroundColor("#f5f5f7"));
+							} else {
+								dispatch(setThemeMode("dark"));
+								dispatch(setBackgroundPattern("circuit"));
+								dispatch(setBackgroundColor("#4a4a52"));
+							}
+						}}
 						style={styles.menuItem}
 					>
 						<Text style={{ fontSize: 18 }}>{colorScheme === "dark" ? "☀️" : "🌙"}</Text>
@@ -221,7 +248,7 @@ export default function TabLayout() {
 	return (
 		<>
 			<Tabs
-				screenOptions={{ headerShown: false, tabBarPosition: "top" }}
+				screenOptions={{ headerShown: false, tabBarPosition: "top", animation: "none", unmountOnBlur: true }}
 				tabBar={(props) => (
 					<NavBar
 						{...props}
@@ -272,14 +299,14 @@ const styles = StyleSheet.create({
 	navBar: {
 		flexDirection: "row",
 		alignItems: "center",
-		height: 56,
+		height: 64,
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
 	glassPill: {
 		flexDirection: "row",
 		alignItems: "center",
-		height: 40,
+		height: 48,
 		paddingHorizontal: 4,
 	},
 	logo: {
@@ -291,6 +318,11 @@ const styles = StyleSheet.create({
 	appName: {
 		fontSize: 15,
 		fontWeight: "600",
+	},
+	appVersion: {
+		fontSize: 10,
+		fontWeight: "400",
+		opacity: 0.55,
 	},
 	tab: {
 		flexDirection: "row",
