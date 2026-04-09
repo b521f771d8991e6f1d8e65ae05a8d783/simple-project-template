@@ -9,7 +9,7 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
 	if (!document.getElementById(id)) {
 		const s = document.createElement("style");
 		s.id = id;
-		s.textContent = ".glass-pill-wide,.glass-pill-sm{transition:transform .18s cubic-bezier(.34,1.56,.64,1)}.glass-pill-wide:hover{transform:scale(1.06)}.glass-pill-sm:hover{transform:scale(1.18)}";
+		s.textContent = ".glass-pill-wide,.glass-pill-sm{transition:transform .18s cubic-bezier(.34,1.56,.64,1)}.glass-pill-wide:hover{transform:scale(1.01)}.glass-pill-sm:hover{transform:scale(1.01)}";
 		document.head.appendChild(s);
 	}
 }

@@ -10,7 +10,7 @@ function injectCSS() {
 	s.id = id;
 	s.textContent = [
 		".apple-btn{transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease!important;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:0 1px 3px rgba(0,0,0,0.08)}",
-		".apple-btn:hover{transform:scale(1.04)!important;box-shadow:0 3px 10px rgba(0,0,0,0.12)!important}",
+		".apple-btn:hover{transform:scale(1.01)!important;box-shadow:0 3px 10px rgba(0,0,0,0.12)!important}",
 		".apple-btn:active{transform:scale(.97)!important;transition-duration:.06s!important;box-shadow:0 0 0 rgba(0,0,0,0)!important}",
 	].join("");
 	document.head.appendChild(s);
