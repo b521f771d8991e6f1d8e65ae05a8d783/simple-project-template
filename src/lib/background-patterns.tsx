@@ -265,11 +265,8 @@ export const PATTERN_OPTIONS: { key: BackgroundPattern; label: string }[] = [
  * Keys are stored in Redux; sources are resolved locally via require().
  */
 export const IMAGE_PRESETS: { key: string; label: string; source: ReturnType<typeof require> }[] = [
-	{ key: "abstract-flow",       label: "Abstract Flow",        source: require("@/assets/backgrounds/abstract-flow.svg") },
-	{ key: "abstract-art",        label: "Abstract Art",         source: require("@/assets/backgrounds/abstract-art.svg") },
-	{ key: "geometric-landscape", label: "Geometric Landscape",  source: require("@/assets/backgrounds/geometric-landscape.svg") },
-	{ key: "mountains-sun",       label: "Mountains & Sun",      source: require("@/assets/backgrounds/mountains-sun.svg") },
-	{ key: "layered-shapes",      label: "Layered Shapes",       source: require("@/assets/backgrounds/layered-shapes.svg") },
+	{ key: "abstract-flow", label: "Abstract Flow", source: require("@/assets/backgrounds/abstract-flow.svg") },
+	{ key: "abstract-art",  label: "Abstract Art",  source: require("@/assets/backgrounds/abstract-art.svg") },
 ];
 
 export function getImageSource(key: string): ReturnType<typeof require> | null {

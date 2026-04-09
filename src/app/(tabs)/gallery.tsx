@@ -448,6 +448,7 @@ export default function GalleryScreen() {
 										<Svg
 											width="100%"
 											height="100%"
+											viewBox="0 0 70 70"
 											style={StyleSheet.absoluteFill}
 											pointerEvents="none"
 										>
@@ -513,10 +514,10 @@ const styles = StyleSheet.create({
 		fontSize: 34,
 		fontWeight: "700",
 		letterSpacing: -0.5,
+		marginBottom: -12,
 	},
 	pageSubtitle: {
 		fontSize: 15,
-		marginTop: 4,
 		marginBottom: 4,
 	},
 	section: {
@@ -633,6 +634,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		flexWrap: "wrap",
 		gap: 12,
+		justifyContent: "center",
 	},
 	paletteItem: {
 		alignItems: "center",
