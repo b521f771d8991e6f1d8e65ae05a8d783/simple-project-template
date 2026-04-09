@@ -1,21 +1,12 @@
-import { View, StyleSheet, Platform, type ViewStyle, type StyleProp } from "react-native";
+import { Animated, StyleSheet, Platform, type ViewStyle, type StyleProp } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemedText } from "@/components/themed-text";
-
-if (Platform.OS === "web" && typeof document !== "undefined") {
-	const id = "liquid-glass-hover-style";
-	if (!document.getElementById(id)) {
-		const s = document.createElement("style");
-		s.id = id;
-		s.textContent = ".liquid-glass{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}.liquid-glass:hover{transform:scale(1.003)}";
-		document.head.appendChild(s);
-	}
-}
+import { useScaleAnimation } from "@/hooks/use-scale-animation";
 
 interface LiquidGlassProps {
 	children: React.ReactNode;
 	style?: StyleProp<ViewStyle>;
-	/** Optional section title rendered above the glass surface */
+	/** Optional section title rendered inside the glass surface */
 	title?: string;
 	/** Corner radius — defaults to 20 for a soft card feel */
 	radius?: number;
@@ -30,25 +21,24 @@ interface LiquidGlassProps {
 export function LiquidGlass({ children, style, title, radius = 20, padding = 16 }: LiquidGlassProps) {
 	const colorScheme = useColorScheme();
 	const dark = colorScheme === "dark";
+	const { scale, hoverHandlers } = useScaleAnimation(1.003, 1);
 
-	const bg = dark ? "rgba(45,45,47,0.12)" : "rgba(255,255,255,0.12)";
-	const border = dark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.08)";
-	const shadow = dark ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.13)";
+	const bg     = dark ? "rgba(45,45,47,0.12)"      : "rgba(255,255,255,0.12)";
+	const border = dark ? "rgba(255,255,255,0.14)"   : "rgba(0,0,0,0.08)";
+	const shadow = dark ? "rgba(0,0,0,0.28)"         : "rgba(0,0,0,0.13)";
 
-	const webExtra =
-		Platform.OS === "web"
-			? ({
-					backdropFilter: "blur(12px) saturate(140%)",
-					WebkitBackdropFilter: "blur(12px) saturate(140%)",
-					boxShadow: dark
-						? "0 4px 24px rgba(0,0,0,0.55)"
-						: "0 4px 24px rgba(0,0,0,0.10)",
-			  } as any)
-			: {};
+	const webExtra = Platform.OS === "web"
+		? ({
+				backdropFilter: "blur(12px) saturate(140%)",
+				WebkitBackdropFilter: "blur(12px) saturate(140%)",
+				boxShadow: dark
+					? "0 2px 12px rgba(0,0,0,0.28)"
+					: "0 4px 24px rgba(0,0,0,0.10)",
+		  } as any)
+		: {};
 
 	return (
-		<View
-			className="liquid-glass"
+		<Animated.View
 			style={[
 				styles.base,
 				{
@@ -57,16 +47,18 @@ export function LiquidGlass({ children, style, title, radius = 20, padding = 16 
 					borderRadius: radius,
 					padding,
 					shadowColor: shadow,
+					transform: [{ scale }],
 					...webExtra,
 				},
 				style,
 			]}
+			{...(hoverHandlers as any)}
 		>
 			{title ? (
 				<ThemedText type="headline" style={styles.title}>{title}</ThemedText>
 			) : null}
 			{children}
-		</View>
+		</Animated.View>
 	);
 }
 

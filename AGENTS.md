@@ -53,7 +53,9 @@ The **Rapid Deploy** workflow uses `:dev` targets (debug cargo, sourcemaps, no m
 
 ## UI Design Principles
 
-The UI follows Apple's Human Interface Guidelines in spirit: **simple, focused, and content-first**. Every screen should feel like it could ship as a native iOS app.
+**All UI work must follow [Apple's Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) under all circumstances.** When in doubt about any design decision, defer to the HIG. The principles below are derived from the HIG and must be applied consistently.
+
+The UI follows Apple's Human Interface Guidelines: **simple, focused, and content-first**. Every screen should feel like it could ship as a native iOS app.
 
 ### Core philosophy
 

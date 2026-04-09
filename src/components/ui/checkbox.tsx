@@ -1,22 +1,7 @@
-import { useEffect } from "react";
-import { Pressable, View, StyleSheet, Platform } from "react-native";
+import { Animated, Pressable, View, StyleSheet } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Colors } from "@/constants/theme";
-
-function injectCSS() {
-	if (Platform.OS !== "web" || typeof document === "undefined") return;
-	const id = "checkbox-css";
-	if (document.getElementById(id)) return;
-	const s = document.createElement("style");
-	s.id = id;
-	s.textContent = [
-		".apple-checkbox{cursor:pointer;-webkit-user-select:none;user-select:none;transition:transform .15s ease!important}",
-		".apple-checkbox:hover{transform:scale(1.08)!important}",
-		".apple-checkbox:active{transform:scale(.92)!important;transition-duration:.06s!important}",
-	].join("");
-	document.head.appendChild(s);
-}
+import { useScaleAnimation } from "@/hooks/use-scale-animation";
 
 export interface CheckboxProps {
 	checked: boolean;
@@ -25,11 +10,9 @@ export interface CheckboxProps {
 }
 
 export function Checkbox({ checked, onValueChange, disabled = false }: CheckboxProps) {
-	useEffect(() => injectCSS(), []);
-
 	const colorScheme = useColorScheme();
-	const c = Colors[colorScheme];
 	const dark = colorScheme === "dark";
+	const { scale, hoverHandlers, pressHandlers } = useScaleAnimation(1.08, 0.92);
 
 	const bgColor = checked
 		? (dark ? "#2997ff" : "#0071e3")
@@ -40,25 +23,32 @@ export function Checkbox({ checked, onValueChange, disabled = false }: CheckboxP
 		: (dark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.20)");
 
 	return (
-		<Pressable
-			onPress={disabled ? undefined : () => onValueChange?.(!checked)}
-			{...(Platform.OS === "web" && !disabled ? { className: "apple-checkbox" } as any : {})}
-			style={{ opacity: disabled ? 0.38 : 1 }}
+		<Animated.View
+			style={{ transform: [{ scale }], opacity: disabled ? 0.38 : 1 }}
+			{...(hoverHandlers as any)}
 		>
-			<View style={[styles.box, { backgroundColor: bgColor, borderColor }]}>
-				{checked && (
-					<Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
-						<Path
-							d="M3 7.5L5.5 10L11 4"
-							stroke="#fff"
-							strokeWidth={2}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</Svg>
-				)}
-			</View>
-		</Pressable>
+			<Pressable
+				onPress={disabled ? undefined : () => onValueChange?.(!checked)}
+				{...pressHandlers}
+				accessibilityRole="checkbox"
+				accessibilityState={{ checked, disabled }}
+				hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+			>
+				<View style={[styles.box, { backgroundColor: bgColor, borderColor }]}>
+					{checked && (
+						<Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
+							<Path
+								d="M3 7.5L5.5 10L11 4"
+								stroke="#fff"
+								strokeWidth={2}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+						</Svg>
+					)}
+				</View>
+			</Pressable>
+		</Animated.View>
 	);
 }
 

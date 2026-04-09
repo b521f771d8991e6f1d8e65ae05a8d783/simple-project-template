@@ -1,6 +1,8 @@
-import { Text, type TextProps, StyleSheet } from "react-native";
+import { Text, type TextProps, StyleSheet, Platform } from "react-native";
 
 import { useThemeColor } from "@/hooks/use-theme-color";
+
+const fontFamily = Platform.OS === "macos" ? undefined : "Arial";
 
 export type ThemedTextProps = TextProps & {
 	lightColor?: string;
@@ -33,7 +35,7 @@ export function ThemedText({
 
 	return (
 		<Text
-			style={[{ color }, typeStyles[type], style]}
+			style={[{ color, fontFamily }, typeStyles[type], style]}
 			{...rest}
 		/>
 	);

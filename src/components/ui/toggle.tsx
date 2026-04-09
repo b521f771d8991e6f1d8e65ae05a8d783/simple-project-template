@@ -1,21 +1,7 @@
-import { useEffect } from "react";
-import { Pressable, View, StyleSheet, Platform } from "react-native";
+import { useRef, useEffect } from "react";
+import { Animated, Pressable, StyleSheet, Platform } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Colors } from "@/constants/theme";
-
-function injectCSS() {
-	if (Platform.OS !== "web" || typeof document === "undefined") return;
-	const id = "toggle-css";
-	if (document.getElementById(id)) return;
-	const s = document.createElement("style");
-	s.id = id;
-	s.textContent = [
-		".apple-toggle{cursor:pointer;-webkit-user-select:none;user-select:none}",
-		".apple-toggle .toggle-knob{transition:transform .2s cubic-bezier(.34,1.3,.64,1)!important}",
-		".apple-toggle .toggle-track{transition:background-color .2s ease!important}",
-	].join("");
-	document.head.appendChild(s);
-}
+import { useScaleAnimation } from "@/hooks/use-scale-animation";
 
 export interface ToggleProps {
 	value: boolean;
@@ -24,40 +10,52 @@ export interface ToggleProps {
 }
 
 export function Toggle({ value, onValueChange, disabled = false }: ToggleProps) {
-	useEffect(() => injectCSS(), []);
-
 	const colorScheme = useColorScheme();
-	const c = Colors[colorScheme];
 	const dark = colorScheme === "dark";
+
+	// Knob slide animation
+	const knobX = useRef(new Animated.Value(value ? 16 : 0)).current;
+	useEffect(() => {
+		Animated.spring(knobX, {
+			toValue: value ? 16 : 0,
+			useNativeDriver: true,
+			tension: 300,
+			friction: 20,
+		}).start();
+	}, [value]);
+
+	const { scale, hoverHandlers } = useScaleAnimation(1.04, 1);
 
 	const trackColor = value
 		? (dark ? "#2997ff" : "#0071e3")
 		: (dark ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.09)");
 
+	const knobShadow: object = Platform.OS !== "web"
+		? { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }
+		: { boxShadow: "0 2px 4px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.10)" } as any;
+
 	return (
-		<Pressable
-			onPress={disabled ? undefined : () => onValueChange?.(!value)}
-			{...(Platform.OS === "web" ? { className: "apple-toggle" } as any : {})}
-			style={{ opacity: disabled ? 0.38 : 1 }}
+		<Animated.View
+			style={{ transform: [{ scale }], opacity: disabled ? 0.38 : 1 }}
+			{...(hoverHandlers as any)}
 		>
-			<View
-				{...(Platform.OS === "web" ? { className: "toggle-track" } as any : {})}
-				style={[styles.track, { backgroundColor: trackColor }]}
+			<Pressable
+				onPress={disabled ? undefined : () => onValueChange?.(!value)}
+				accessibilityRole="switch"
+				accessibilityState={{ checked: value, disabled }}
+				hitSlop={{ top: 10, bottom: 10, left: 2, right: 2 }}
 			>
-				<View
-					{...(Platform.OS === "web" ? { className: "toggle-knob" } as any : {})}
-					style={[
-						styles.knob,
-						{
-							transform: [{ translateX: value ? 16 : 0 }],
-						},
-						Platform.OS === "web"
-							? { boxShadow: "0 2px 4px rgba(0,0,0,0.15), 0 1px 2px rgba(0,0,0,0.10)" } as any
-							: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 },
-					]}
-				/>
-			</View>
-		</Pressable>
+				<Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
+					<Animated.View
+						style={[
+							styles.knob,
+							knobShadow,
+							{ transform: [{ translateX: knobX }] },
+						]}
+					/>
+				</Animated.View>
+			</Pressable>
+		</Animated.View>
 	);
 }
 

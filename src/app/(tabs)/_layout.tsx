@@ -1,19 +1,11 @@
 import { useState, useEffect } from "react";
 import { Tabs } from "expo-router";
-import { View, Pressable, Text, StyleSheet, Platform, Modal } from "react-native";
+import { Animated, View, Pressable, Text, StyleSheet, Platform, Modal } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
+import { useScaleAnimation } from "@/hooks/use-scale-animation";
 
-if (Platform.OS === "web" && typeof document !== "undefined") {
-	const id = "glass-pill-hover-style";
-	if (!document.getElementById(id)) {
-		const s = document.createElement("style");
-		s.id = id;
-		s.textContent = ".glass-pill-wide,.glass-pill-sm{transition:transform .18s cubic-bezier(.34,1.56,.64,1)}.glass-pill-wide:hover{transform:scale(1.01)}.glass-pill-sm:hover{transform:scale(1.01)}";
-		document.head.appendChild(s);
-	}
-}
-
+import { LiquidGlass } from "@/components/ui/liquid-glass";
 import { DreamPanel } from "@/components/dream-panel";
 import { APP_VERSION } from "@/lib/version";
 import { LANGUAGES } from "@/components/language-selector";
@@ -90,10 +82,16 @@ function NavBar({
 		? { bottom: 60, right: 16 }
 		: { top: 52, right: 16 };
 
+	const { scale: scaleWide, hoverHandlers: hoverWide } = useScaleAnimation(1.01, 1);
+	const { scale: scaleSm,   hoverHandlers: hoverSm   } = useScaleAnimation(1.01, 1);
+
 	return (
 		<View style={styles.navBarWrapper}>
 		<View style={[styles.navBar, positionStyle]}>
-			<View className="glass-pill glass-pill-wide" style={[styles.glassPill, glassStyle]}>
+			<Animated.View
+				style={[styles.glassPill, glassStyle, { transform: [{ scale: scaleWide }] }]}
+				{...(hoverWide as any)}
+			>
 				<View style={styles.logo}>
 					<Logo size={24} color={c.text} />
 					<View style={{ gap: 0 }}>
@@ -126,23 +124,35 @@ function NavBar({
 								if (!isFocused) navigation.navigate(route.name);
 							}}
 							style={styles.tab}
+							accessibilityRole="tab"
+							accessibilityLabel={label}
+							accessibilityState={{ selected: isFocused }}
 						>
 							{options.tabBarIcon({ color, focused: isFocused, size: 20 })}
 							<Text style={[styles.label, { color }]}>{label}</Text>
 						</Pressable>
 					);
 				})}
-			</View>
+			</Animated.View>
 			<View style={{ flex: 1 }} />
-			<View className="glass-pill glass-pill-sm" style={[styles.glassPill, glassStyle]}>
-				<Pressable onPress={() => setMenuOpen(true)} style={styles.iconBtn}>
+			<Animated.View
+				style={[styles.glassPill, glassStyle, { transform: [{ scale: scaleSm }] }]}
+				{...(hoverSm as any)}
+			>
+				<Pressable
+					onPress={() => setMenuOpen(true)}
+					style={styles.iconBtn}
+					accessibilityRole="button"
+					accessibilityLabel="More options"
+					accessibilityState={{ expanded: menuOpen }}
+				>
 					<Text style={{ fontSize: 20, color: c.icon }}>⋮</Text>
 				</Pressable>
-			</View>
+			</Animated.View>
 
 			<Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
 				<Pressable style={StyleSheet.absoluteFill} onPress={() => setMenuOpen(false)} />
-				<View style={[styles.menu, { backgroundColor: colorScheme === "dark" ? "rgba(45,45,47,0.88)" : "rgba(255,255,255,0.88)", borderColor: c.border, ...(Platform.OS === "web" ? { backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)" } : {}) } as any, menuPositionStyle]}>
+				<LiquidGlass radius={14} padding={0} style={[styles.menu, menuPositionStyle]}>
 					{aboutIndex !== -1 && (
 						<Pressable
 							onPress={() => {
@@ -150,6 +160,7 @@ function NavBar({
 								navigation.navigate("about");
 							}}
 							style={styles.menuItem}
+							accessibilityRole="menuitem"
 						>
 							<Text style={{ fontSize: 18 }}>ℹ️</Text>
 							<Text style={[styles.menuLabel, { color: aboutFocused ? c.accent : c.text }]}>
@@ -160,6 +171,8 @@ function NavBar({
 					<Pressable
 						onPress={() => setLangOpen((v) => !v)}
 						style={styles.menuItem}
+						accessibilityRole="menuitem"
+						accessibilityState={{ expanded: langOpen }}
 					>
 						<Text style={{ fontSize: 18 }}>
 							{LANGUAGES.find((l) => l.code === reduxLang)?.flag ?? "🌐"}
@@ -170,7 +183,7 @@ function NavBar({
 						<IconSymbol size={12} name="chevron.right" color={c.icon} />
 					</Pressable>
 					{langOpen && (
-						<View style={[styles.langFlyout, { backgroundColor: colorScheme === "dark" ? "rgba(45,45,47,0.88)" : "rgba(255,255,255,0.88)", borderColor: c.border, ...(Platform.OS === "web" ? { backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)" } : {}) } as any]}>
+						<LiquidGlass radius={14} padding={0} style={styles.langFlyout}>
 							{LANGUAGES.map((lang) => (
 								<Pressable
 									key={lang.code}
@@ -192,7 +205,7 @@ function NavBar({
 									</Text>
 								</Pressable>
 							))}
-						</View>
+						</LiquidGlass>
 					)}
 					<Pressable
 						onPress={() => {
@@ -207,6 +220,7 @@ function NavBar({
 							}
 						}}
 						style={styles.menuItem}
+						accessibilityRole="menuitem"
 					>
 						<Text style={{ fontSize: 18 }}>{colorScheme === "dark" ? "☀️" : "🌙"}</Text>
 						<Text style={[styles.menuLabel, { color: c.text }]}>
@@ -216,6 +230,7 @@ function NavBar({
 					<Pressable
 						onPress={() => dispatch(toggleNavPosition())}
 						style={styles.menuItem}
+						accessibilityRole="menuitem"
 					>
 						<Text style={{ fontSize: 18 }}>{isBottom ? "⬆" : "⬇"}</Text>
 						<Text style={[styles.menuLabel, { color: c.text }]}>
@@ -229,12 +244,13 @@ function NavBar({
 								onDreamPress();
 							}}
 							style={styles.menuItem}
+							accessibilityRole="menuitem"
 						>
 							<IconSymbol size={22} name="sparkles" color={dreamOpen ? "#f59e0b" : "#d4a017"} />
 							<Text style={[styles.menuLabel, { color: c.text }]}>Dream Mode</Text>
 						</Pressable>
 					)}
-				</View>
+				</LiquidGlass>
 			</Modal>
 		</View>
 		</View>
@@ -332,7 +348,9 @@ const styles = StyleSheet.create({
 		height: "100%",
 	},
 	iconBtn: {
-		paddingHorizontal: 10,
+		paddingHorizontal: 12,
+		minWidth: 44,
+		alignItems: "center",
 		justifyContent: "center",
 		height: "100%",
 	},
@@ -342,14 +360,7 @@ const styles = StyleSheet.create({
 	},
 	menu: {
 		position: "absolute",
-		borderRadius: 12,
-		borderWidth: StyleSheet.hairlineWidth,
 		paddingVertical: 4,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.15,
-		shadowRadius: 12,
-		elevation: 8,
 		minWidth: 180,
 	},
 	menuItem: {
@@ -368,14 +379,7 @@ const styles = StyleSheet.create({
 		right: "100%",
 		top: 0,
 		marginRight: 6,
-		borderRadius: 12,
-		borderWidth: StyleSheet.hairlineWidth,
 		paddingVertical: 4,
-		shadowColor: "#000",
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.15,
-		shadowRadius: 12,
-		elevation: 8,
 		minWidth: 160,
 	},
 	subMenuItem: {

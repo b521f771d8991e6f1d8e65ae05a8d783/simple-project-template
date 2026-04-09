@@ -495,6 +495,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		flexWrap: "wrap",
 		gap: 20,
+		justifyContent: "center",
 	},
 	iconItem: {
 		alignItems: "center",
@@ -547,6 +548,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		flexWrap: "wrap",
 		gap: 10,
+		justifyContent: "center",
 	},
 	colorItem: {
 		alignItems: "center",
