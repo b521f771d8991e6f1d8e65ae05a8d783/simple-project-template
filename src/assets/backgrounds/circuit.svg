@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <rect width="1440" height="900" fill="#f0fdf4"/>
+  <defs>
+    <!-- Circuit board tile: cross lines + L-bends + dots -->
+    <pattern id="circuit" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+      <!-- Main H and V traces -->
+      <line x1="0"  y1="40" x2="80" y2="40" stroke="#22c55e" stroke-width="1"   stroke-opacity="0.22"/>
+      <line x1="40" y1="0"  x2="40" y2="80" stroke="#22c55e" stroke-width="1"   stroke-opacity="0.22"/>
+
+      <!-- L-turn top-left quadrant -->
+      <line x1="10" y1="10" x2="10" y2="22" stroke="#22c55e" stroke-width="0.9" stroke-opacity="0.18"/>
+      <line x1="10" y1="22" x2="22" y2="22" stroke="#22c55e" stroke-width="0.9" stroke-opacity="0.18"/>
+
+      <!-- L-turn bottom-right quadrant -->
+      <line x1="58" y1="58" x2="70" y2="58" stroke="#22c55e" stroke-width="0.9" stroke-opacity="0.18"/>
+      <line x1="70" y1="58" x2="70" y2="70" stroke="#22c55e" stroke-width="0.9" stroke-opacity="0.18"/>
+
+      <!-- L-turn top-right quadrant -->
+      <line x1="70" y1="10" x2="70" y2="22" stroke="#22c55e" stroke-width="0.9" stroke-opacity="0.18"/>
+      <line x1="58" y1="22" x2="70" y2="22" stroke="#22c55e" stroke-width="0.9" stroke-opacity="0.18"/>
+
+      <!-- L-turn bottom-left quadrant -->
+      <line x1="10" y1="58" x2="22" y2="58" stroke="#22c55e" stroke-width="0.9" stroke-opacity="0.18"/>
+      <line x1="10" y1="58" x2="10" y2="70" stroke="#22c55e" stroke-width="0.9" stroke-opacity="0.18"/>
+
+      <!-- Junction dots -->
+      <circle cx="40" cy="40" r="2.8" fill="#16a34a" fill-opacity="0.30"/>
+      <circle cx="10" cy="22" r="1.8" fill="#22c55e" fill-opacity="0.28"/>
+      <circle cx="70" cy="58" r="1.8" fill="#22c55e" fill-opacity="0.28"/>
+      <circle cx="70" cy="22" r="1.8" fill="#22c55e" fill-opacity="0.28"/>
+      <circle cx="10" cy="58" r="1.8" fill="#22c55e" fill-opacity="0.28"/>
+
+      <!-- Corner pads -->
+      <circle cx="0"  cy="0"  r="2.2" fill="#22c55e" fill-opacity="0.15"/>
+      <circle cx="80" cy="0"  r="2.2" fill="#22c55e" fill-opacity="0.15"/>
+      <circle cx="0"  cy="80" r="2.2" fill="#22c55e" fill-opacity="0.15"/>
+      <circle cx="80" cy="80" r="2.2" fill="#22c55e" fill-opacity="0.15"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#f0fdf4" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#f0fdf4" stop-opacity="0.45"/>
+    </radialGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#circuit)"/>
+  <rect width="1440" height="900" fill="url(#vignette)"/>
+</svg>

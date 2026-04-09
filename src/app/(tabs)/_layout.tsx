@@ -5,7 +5,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import Constants from "expo-constants";
 
 import { DreamPanel } from "@/components/dream-panel";
-import { LanguageSelector } from "@/components/language-selector";
+import { LANGUAGES } from "@/components/language-selector";
 import { Logo } from "@/components/logo";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useTranslation } from "@/lib/i18n";
@@ -13,6 +13,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { toggleTheme, toggleNavPosition } from "@/redux/state/themeSlice";
+import { setLanguage } from "@/redux/state/languageSlice";
 
 type AppMode = "develop" | "dream" | "freeze";
 
@@ -46,6 +47,8 @@ function NavBar({
 	const t = useTranslation();
 	const dispatch = useAppDispatch();
 	const [menuOpen, setMenuOpen] = useState(false);
+	const [langOpen, setLangOpen] = useState(false);
+	const reduxLang = useAppSelector((s) => s.language.code);
 	const navPosition = useAppSelector((s) => s.theme.navPosition);
 	const isBottom = navPosition === "bottom";
 
@@ -93,6 +96,12 @@ function NavBar({
 					const i18nKey = routeLabels[route.name];
 					const label = i18nKey ? t(i18nKey as any) : options.title ?? route.name;
 
+					if (!options.tabBarIcon) {
+						throw new Error(
+							`Tab "${route.name}" is missing a tabBarIcon. All visible tabs must define tabBarIcon in their Tabs.Screen options.`
+						);
+					}
+
 					return (
 						<Pressable
 							key={route.key}
@@ -101,7 +110,7 @@ function NavBar({
 							}}
 							style={styles.tab}
 						>
-							{options.tabBarIcon?.({ color, focused: isFocused, size: 20 })}
+							{options.tabBarIcon({ color, focused: isFocused, size: 20 })}
 							<Text style={[styles.label, { color }]}>{label}</Text>
 						</Pressable>
 					);
@@ -127,16 +136,47 @@ function NavBar({
 						>
 							<Text style={{ fontSize: 18 }}>ℹ️</Text>
 							<Text style={[styles.menuLabel, { color: aboutFocused ? c.accent : c.text }]}>
-								{t("nav.about" as any) ?? "About"}
+								{t("nav.explore")}
 							</Text>
 						</Pressable>
 					)}
-					<Pressable style={styles.menuItem}>
-						<LanguageSelector />
-						<Text style={[styles.menuLabel, { color: c.text }]}>
-							{t("nav.language" as any) ?? "Language"}
+					<Pressable
+						onPress={() => setLangOpen((v) => !v)}
+						style={styles.menuItem}
+					>
+						<Text style={{ fontSize: 18 }}>
+							{LANGUAGES.find((l) => l.code === reduxLang)?.flag ?? "🌐"}
 						</Text>
+						<Text style={[styles.menuLabel, { color: c.text, flex: 1 }]}>
+							{t("nav.language")}
+						</Text>
+						<IconSymbol size={12} name="chevron.right" color={c.icon} />
 					</Pressable>
+					{langOpen && (
+						<View style={[styles.langFlyout, { backgroundColor: c.background, borderColor: c.border }]}>
+							{LANGUAGES.map((lang) => (
+								<Pressable
+									key={lang.code}
+									onPress={() => {
+										dispatch(setLanguage(lang.code));
+										setLangOpen(false);
+									}}
+									style={[
+										styles.subMenuItem,
+										lang.code === reduxLang && { backgroundColor: c.accent + "18" },
+									]}
+								>
+									<Text style={{ fontSize: 16 }}>{lang.flag}</Text>
+									<Text style={[
+										styles.menuLabel,
+										{ color: lang.code === reduxLang ? c.accent : c.text },
+									]}>
+										{lang.name}
+									</Text>
+								</Pressable>
+							))}
+						</View>
+					)}
 					<Pressable
 						onPress={() => dispatch(toggleTheme())}
 						style={styles.menuItem}
@@ -290,5 +330,29 @@ const styles = StyleSheet.create({
 	menuLabel: {
 		fontSize: 14,
 		fontWeight: "500",
+	},
+	langFlyout: {
+		position: "absolute",
+		right: "100%",
+		top: 0,
+		marginRight: 6,
+		borderRadius: 12,
+		borderWidth: StyleSheet.hairlineWidth,
+		paddingVertical: 4,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.15,
+		shadowRadius: 12,
+		elevation: 8,
+		minWidth: 160,
+	},
+	subMenuItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 14,
+		paddingVertical: 7,
+		gap: 8,
+		borderRadius: 6,
+		marginHorizontal: 4,
 	},
 });

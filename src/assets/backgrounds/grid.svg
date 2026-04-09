@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <rect width="1440" height="900" fill="#fbfbfd"/>
+  <defs>
+    <pattern id="minor" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#d2d2d7" stroke-width="0.4"/>
+    </pattern>
+    <pattern id="major" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="url(#minor)"/>
+      <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#d2d2d7" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#fbfbfd" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#fbfbfd" stop-opacity="0.5"/>
+    </radialGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#major)"/>
+  <!-- Bold origin cross -->
+  <line x1="720" y1="0" x2="720" y2="900" stroke="#0071e3" stroke-width="0.6" stroke-opacity="0.12"/>
+  <line x1="0" y1="450" x2="1440" y2="450" stroke="#0071e3" stroke-width="0.6" stroke-opacity="0.12"/>
+  <rect width="1440" height="900" fill="url(#vignette)"/>
+</svg>

@@ -73,9 +73,9 @@ export function LanguageSelector({ selected, onSelect }: LanguageSelectorProps) 
 
 const styles = StyleSheet.create({
 	trigger: {
-		paddingHorizontal: 8,
 		justifyContent: "center",
-		height: "100%",
+		alignItems: "center",
+		width: 22,
 	},
 	flag: {
 		fontSize: 18,

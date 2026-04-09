@@ -1,26 +1,28 @@
-import { Text, type TextProps } from "react-native";
+import { Text, type TextProps, StyleSheet } from "react-native";
 
 import { useThemeColor } from "@/hooks/use-theme-color";
 
 export type ThemedTextProps = TextProps & {
 	lightColor?: string;
 	darkColor?: string;
-	type?: "default" | "title" | "subtitle" | "semibold" | "caption";
+	type?: "title" | "subtitle" | "headline" | "body" | "caption" | "default" | "semibold";
 };
 
-const typeClasses: Record<NonNullable<ThemedTextProps["type"]>, string> = {
-	default: "text-base",
-	title: "text-2xl font-bold",
-	subtitle: "text-xl font-bold",
-	semibold: "text-base font-semibold",
-	caption: "text-sm",
+const typeStyles: Record<NonNullable<ThemedTextProps["type"]>, object> = {
+	title:    { fontSize: 28, fontWeight: "700", letterSpacing: -0.4, lineHeight: 34 },
+	subtitle: { fontSize: 22, fontWeight: "600", letterSpacing: -0.2, lineHeight: 28 },
+	headline: { fontSize: 17, fontWeight: "600", letterSpacing: 0,    lineHeight: 22 },
+	body:     { fontSize: 17, fontWeight: "400", letterSpacing: 0,    lineHeight: 22 },
+	caption:  { fontSize: 12, fontWeight: "400", letterSpacing: 0,    lineHeight: 16 },
+	// legacy aliases
+	default:  { fontSize: 17, fontWeight: "400", letterSpacing: 0,    lineHeight: 22 },
+	semibold: { fontSize: 17, fontWeight: "600", letterSpacing: 0,    lineHeight: 22 },
 };
 
 export function ThemedText({
-	className,
 	lightColor,
 	darkColor,
-	type = "default",
+	type = "body",
 	style,
 	...rest
 }: ThemedTextProps) {
@@ -31,8 +33,7 @@ export function ThemedText({
 
 	return (
 		<Text
-			className={`${typeClasses[type]} ${className ?? ""}`}
-			style={[{ color }, style]}
+			style={[{ color }, typeStyles[type], style]}
 			{...rest}
 		/>
 	);
