@@ -27,37 +27,52 @@ export function Button({
 
 	const fg: Record<V, string> = {
 		primary:     "#fff",
-		secondary:   dark ? "#000" : "#fff",
+		secondary:   dark ? "#f5f5f7" : "#1d1d1f",
 		destructive: "#fff",
 		outline:     dark ? "#2997ff" : "#0071e3",
 	};
 
 	const sizes = {
-		sm: { px: 16, py: 8,  fs: 14 },
-		md: { px: 22, py: 10, fs: 17 },
+		sm: { px: 14, py: 7,  fs: 13 },
+		md: { px: 20, py: 9, fs: 15 },
 	}[size];
 
 	const bg: Record<V, string> = {
 		primary:     dark ? "#2997ff" : "#0071e3",
-		secondary:   dark ? "#f5f5f7" : "#1d1d1f",
-		destructive: "#b91c1c",
+		secondary:   dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.07)",
+		destructive: "#c0392b",
 		outline:     "transparent",
 	};
 
 	const border: Record<V, string> = {
 		primary:     "transparent",
-		secondary:   "transparent",
+		secondary:   dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)",
 		destructive: "transparent",
-		outline:     dark ? "rgba(41,151,255,0.5)" : "rgba(0,113,227,0.35)",
+		outline:     dark ? "rgba(41,151,255,0.6)" : "rgba(0,113,227,0.45)",
 	};
 
+	// macOS-style depth: filled buttons get a drop shadow; bordered buttons get an inset highlight
+	const filledVariant = variant === "primary" || variant === "destructive";
+	const webShadow = filledVariant
+		? `0 1px 3px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(0,0,0,0.12)`
+		: dark
+			? `inset 0 0.5px 0 rgba(255,255,255,0.10), 0 1px 2px rgba(0,0,0,0.22), 0 0 0 0.5px rgba(255,255,255,0.06)`
+			: `inset 0 0.5px 0 rgba(255,255,255,0.95), 0 1px 2px rgba(0,0,0,0.09), 0 0 0 0.5px rgba(0,0,0,0.07)`;
+
 	const shadowStyle: object = Platform.OS !== "web"
-		? { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.10, shadowRadius: 3, elevation: 2 }
-		: { boxShadow: "0 1px 3px rgba(0,0,0,0.08)" } as any;
+		? { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 2, elevation: 2 }
+		: { boxShadow: webShadow } as any;
+
+	// Subtle top-to-bottom gradient overlay for depth (web only)
+	const gradientOverlay = Platform.OS === "web" ? {
+		backgroundImage: filledVariant
+			? `linear-gradient(180deg, rgba(255,255,255,${dark ? "0.10" : "0.14"}) 0%, rgba(0,0,0,0.06) 100%)`
+			: `linear-gradient(180deg, rgba(255,255,255,${dark ? "0.06" : "0.50"}) 0%, rgba(0,0,0,0.04) 100%)`,
+	} as any : {};
 
 	return (
 		<Animated.View
-			style={[{ transform: [{ scale }] }, shadowStyle]}
+			style={[{ transform: [{ scale }], borderRadius: 980 }, shadowStyle]}
 			{...(hoverHandlers as any)}
 		>
 			<Pressable
@@ -78,7 +93,8 @@ export function Button({
 						{
 							backgroundColor: bg[variant],
 							borderColor: border[variant],
-							borderWidth: variant === "outline" ? 1.5 : 0,
+							borderWidth: variant === "outline" ? 1.5 : variant === "secondary" ? StyleSheet.hairlineWidth : 0,
+							...gradientOverlay,
 						},
 					]}
 				/>
@@ -120,8 +136,8 @@ const styles = StyleSheet.create({
 		borderRadius: 980,
 	},
 	label: {
-		fontWeight: "500",
-		letterSpacing: -0.1,
+		fontWeight: "600",
+		letterSpacing: -0.2,
 		zIndex: 1,
 	},
 });

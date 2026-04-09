@@ -2,7 +2,12 @@ import { Text, type TextProps, StyleSheet, Platform } from "react-native";
 
 import { useThemeColor } from "@/hooks/use-theme-color";
 
-const fontFamily = Platform.OS === "macos" ? undefined : "Arial";
+const fontFamily = Platform.select({
+	ios: undefined,
+	android: undefined,
+	macos: undefined,
+	default: "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif",
+}) as string | undefined;
 
 export type ThemedTextProps = TextProps & {
 	lightColor?: string;
@@ -11,14 +16,14 @@ export type ThemedTextProps = TextProps & {
 };
 
 const typeStyles: Record<NonNullable<ThemedTextProps["type"]>, object> = {
-	title:    { fontSize: 28, fontWeight: "700", letterSpacing: -0.4, lineHeight: 34 },
-	subtitle: { fontSize: 22, fontWeight: "600", letterSpacing: -0.2, lineHeight: 28 },
-	headline: { fontSize: 17, fontWeight: "600", letterSpacing: 0,    lineHeight: 22 },
-	body:     { fontSize: 17, fontWeight: "400", letterSpacing: 0,    lineHeight: 22 },
-	caption:  { fontSize: 12, fontWeight: "400", letterSpacing: 0,    lineHeight: 16 },
+	title:    { fontSize: 28, fontWeight: "800", letterSpacing: -0.6, lineHeight: 34 },
+	subtitle: { fontSize: 22, fontWeight: "700", letterSpacing: -0.3, lineHeight: 28 },
+	headline: { fontSize: 17, fontWeight: "700", letterSpacing: -0.1, lineHeight: 22 },
+	body:     { fontSize: 17, fontWeight: "500", letterSpacing: -0.1, lineHeight: 24 },
+	caption:  { fontSize: 12, fontWeight: "500", letterSpacing: 0,    lineHeight: 16 },
 	// legacy aliases
-	default:  { fontSize: 17, fontWeight: "400", letterSpacing: 0,    lineHeight: 22 },
-	semibold: { fontSize: 17, fontWeight: "600", letterSpacing: 0,    lineHeight: 22 },
+	default:  { fontSize: 17, fontWeight: "500", letterSpacing: -0.1, lineHeight: 24 },
+	semibold: { fontSize: 17, fontWeight: "600", letterSpacing: -0.1, lineHeight: 22 },
 };
 
 export function ThemedText({

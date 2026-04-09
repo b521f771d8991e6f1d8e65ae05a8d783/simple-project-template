@@ -15,8 +15,8 @@ export function ThemedView({
 	darkColor,
 	...rest
 }: ThemedViewProps) {
-	const { pattern, color } = useBackground();
-	const hasCustomBg = pattern !== "none" || color !== null;
+	const { pattern, color, image } = useBackground();
+	const hasCustomBg = pattern !== "none" || color !== null || image !== null;
 	const backgroundColor = useThemeColor(
 		{ light: lightColor, dark: darkColor },
 		"background",

@@ -10,12 +10,14 @@ interface BackgroundState {
 	pattern: BackgroundPattern;
 	/** null = use theme default */
 	color: string | null;
+	/** URI of an image background; takes priority over color + pattern when set */
+	image: string | null;
 }
 
 const isDark = Appearance.getColorScheme() === "dark";
 const initialState: BackgroundState = isDark
-	? { pattern: "circuit", color: "#4a4a52" }
-	: { pattern: "circuit", color: "#f5f5f7" };
+	? { pattern: "circuit", color: "#4a4a52", image: null }
+	: { pattern: "circuit", color: "#f5f5f7", image: null };
 
 export const backgroundSlice = createSlice({
 	name: "background",
@@ -27,7 +29,10 @@ export const backgroundSlice = createSlice({
 		setBackgroundColor(state, action: PayloadAction<string | null>) {
 			state.color = action.payload;
 		},
+		setBackgroundImage(state, action: PayloadAction<string | null>) {
+			state.image = action.payload;
+		},
 	},
 });
 
-export const { setBackgroundPattern, setBackgroundColor } = backgroundSlice.actions;
+export const { setBackgroundPattern, setBackgroundColor, setBackgroundImage } = backgroundSlice.actions;

@@ -247,7 +247,7 @@ function NavBar({
 							accessibilityRole="menuitem"
 						>
 							<IconSymbol size={22} name="sparkles" color={dreamOpen ? "#f59e0b" : "#d4a017"} />
-							<Text style={[styles.menuLabel, { color: c.text }]}>Dream Mode</Text>
+							<Text style={[styles.menuLabel, { color: c.text }]}>{t("dream.title")}</Text>
 						</Pressable>
 					)}
 				</LiquidGlass>

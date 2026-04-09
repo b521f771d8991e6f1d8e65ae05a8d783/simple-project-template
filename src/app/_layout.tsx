@@ -33,9 +33,9 @@ export const unstable_settings = {
 
 function AppShell() {
   const colorScheme = useColorScheme();
-  const { pattern, color } = useBackground();
+  const { pattern, color, image } = useBackground();
   const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
-  const hasCustomBg = pattern !== 'none' || color !== null;
+  const hasCustomBg = pattern !== 'none' || color !== null || image !== null;
   const theme = useMemo(() => {
     if (!hasCustomBg) return baseTheme;
     return {
