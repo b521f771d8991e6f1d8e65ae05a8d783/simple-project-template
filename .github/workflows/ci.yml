@@ -17,8 +17,6 @@ name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "v*"
   pull_request:
 
 jobs:
@@ -31,25 +29,22 @@ jobs:
       - uses: actions/checkout@main
 
       # ── Environment setup 🔧 ──────────────────────────────────
-      - name: Restore build caches 📦
+      - name: Restore caches 📦
         uses: actions/cache@main
         with:
           path: |
             node_modules
             /tmp/metro-cache
             /tmp/metro-file-map-*
-          key: build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+            .cmake
+            .cmake-wasm
+            .emsdk-cache
+          key: build-${{ runner.os }}-${{ hashFiles('package-lock.json', 'Cargo.lock', 'src-native/**') }}
           restore-keys: build-${{ runner.os }}-
-
-      - name: Rust cache 🦀
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: rapid-deploy
-
-      - name: C++ cache (ccache) ⚡
-        uses: hendrikmuhs/ccache-action@v1
-        with:
-          key: ccache-${{ runner.os }}
 
       - name: Emscripten (WASM/C++) 🌐
         uses: mymindstorm/setup-emsdk@v14

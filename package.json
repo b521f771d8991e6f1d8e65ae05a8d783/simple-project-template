@@ -8,6 +8,8 @@
     "compile:native:native": "cmake --preset release -B .cmake -S . && cmake --build .cmake",
     "compile:rust:wasm": "wasm-pack build --release --out-dir dist/rust --target web",
     "compile:rust:native": "cargo build --release",
+    "build:node": "npm run compile:native:wasm && npm run compile:rust:wasm && npm run compile:web && npm run compile:server",
+    "build:cloudflare-worker": "npm run compile:native:wasm && npm run compile:rust:wasm && npm run compile:web && npm run compile:worker",
     "build:web": "npm run compile:native:wasm && npm run compile:rust:wasm && npm run compile:web && npm run compile:server && npm run compile:worker",
     "compile:server:sea": "npm run compile:server && node --experimental-sea-config sea-config.json && mkdir -p dist/binaries && cp \"$(node -e 'process.stdout.write(process.execPath)')\" dist/binaries/server && chmod u+w dist/binaries/server && npx postject dist/binaries/server NODE_SEA_BLOB dist/sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 --macho-segment-name NODE_SEA",
     "build:tauri": "npm run compile:native:native && npm run compile:rust:native && npm run compile:web && npm run compile:server:sea && cargo tauri build --config tauri.conf.json --no-bundle --features tauri-app",
