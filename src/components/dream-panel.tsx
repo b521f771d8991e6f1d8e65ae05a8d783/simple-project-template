@@ -6,7 +6,6 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { saveMessage, loadMessages, clearHistory, type DreamMessage } from "@/lib/dream-history";
 import { useTranslation } from "@/lib/i18n";
-import { Popup } from "@/components/popup";
 
 interface DreamPanelProps {
 	visible: boolean;
@@ -40,7 +39,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 
 	// Track pending preview jobs: jobId → previewUrl
 	const [pendingPreview, setPendingPreview] = useState<{ jobId: string; previewUrl: string; summary: string } | null>(null);
-	const [showPreviewPopup, setShowPreviewPopup] = useState(false);
 
 	const panResponder = useRef(
 		PanResponder.create({
@@ -178,18 +176,18 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const handleAccept = async () => {
 		if (!pendingPreview) return;
 		setLoading(true);
-		setStatus("Applying changes...");
+		setStatus("Sending to developer...");
 		const { jobId, summary } = pendingPreview;
 		setPendingPreview(null);
 		try {
 			const res = await dreamFetch({ action: "accept", jobId });
 			if (res.error) throw new Error(res.error);
-			const finalText = (res.summary ?? summary ?? "Changes applied.").replace(/\n{3,}/g, "\n\n").trim();
+			const finalText = (res.summary ?? summary ?? "Suggestion sent.").replace(/\n{3,}/g, "\n\n").trim();
 			const msg: DreamMessage = { role: "assistant", content: finalText, hasChanges: true };
 			const id = await saveMessage({ ...msg, sessionId: sessionId ?? undefined }).catch(() => undefined);
 			setMessages((prev) => [...prev, { ...msg, id }]);
 		} catch (err) {
-			const msg: DreamMessage = { role: "assistant", content: `Accept failed: ${err instanceof Error ? err.message : "unknown"}` };
+			const msg: DreamMessage = { role: "assistant", content: `Failed to send: ${err instanceof Error ? err.message : "unknown"}` };
 			const id = await saveMessage(msg).catch(() => undefined);
 			setMessages((prev) => [...prev, { ...msg, id }]);
 		} finally {
@@ -215,39 +213,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 		setPendingPreview(null);
 	};
 
-	// Commit history
-	interface Commit { hash: string; message: string; ago: string }
-	const [commits, setCommits] = useState<Commit[]>([]);
-	const [showCommits, setShowCommits] = useState(false);
-
-	const loadCommits = async () => {
-		const data = await dreamFetch({ action: "listCommits" });
-		setCommits(data.commits ?? []);
-		setShowCommits(true);
-	};
-
-	const revertCommit = async (hash: string) => {
-		setLoading(true);
-		setStatus("Reverting...");
-		try {
-			const data = await dreamFetch({ action: "revert", commitHash: hash });
-			if (data.error) throw new Error(data.error);
-			const msg: DreamMessage = { role: "assistant", content: data.summary };
-			const id = await saveMessage(msg).catch(() => undefined);
-			setMessages((prev) => [...prev, { ...msg, id }]);
-			setShowCommits(false);
-			loadCommits();
-		} catch (err) {
-			const msg: DreamMessage = { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "unknown"}` };
-			const id = await saveMessage(msg).catch(() => undefined);
-			setMessages((prev) => [...prev, { ...msg, id }]);
-		} finally {
-			setLoading(false);
-			setStatus(null);
-		}
-	};
-
-
 	if (!visible) return null;
 
 	return (
@@ -258,49 +223,13 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				{/* Header — drag handle */}
 				<View style={[styles.header, { borderBottomColor: c.border, cursor: "grab" } as any]} {...panResponder.panHandlers}>
 					<Text style={[styles.headerTitle, { color: c.text }]}>{t("dream.title")}</Text>
-					<View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-						<Pressable onPress={() => { if (showCommits) { setShowCommits(false); } else { loadCommits(); } }} hitSlop={8}>
-							<Text style={{ color: showCommits ? c.accent : c.textSecondary, fontSize: 12 }}>{showCommits ? "Chat" : "History"}</Text>
-						</Pressable>
-						{!showCommits && messages.length > 0 && (
-							<Pressable onPress={handleClear} hitSlop={8}>
-								<Text style={{ color: c.textSecondary, fontSize: 12 }}>Clear</Text>
-							</Pressable>
-						)}
-						<Pressable onPress={onClose} hitSlop={8}>
-							<Text style={{ color: c.textSecondary, fontSize: 18 }}>✕</Text>
-						</Pressable>
-					</View>
+					<Pressable onPress={onClose} hitSlop={8}>
+						<Text style={{ color: c.textSecondary, fontSize: 18 }}>✕</Text>
+					</Pressable>
 				</View>
 
-				{/* Commit history view */}
-				{showCommits && (
-					<ScrollView style={styles.messages} contentContainerStyle={styles.messagesContent}>
-						{commits.length === 0 && (
-							<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
-								No dream commits yet.
-							</Text>
-						)}
-						{commits.map((commit) => (
-							<View key={commit.hash} style={[styles.commitRow, { borderBottomColor: c.border }]}>
-								<View style={{ flex: 1, gap: 2 }}>
-									<Text style={{ color: c.text, fontSize: 13 }} numberOfLines={1}>{commit.message}</Text>
-									<Text style={{ color: c.textSecondary, fontSize: 11 }}>{commit.hash.slice(0, 8)} · {commit.ago}</Text>
-								</View>
-								<Pressable
-									onPress={() => revertCommit(commit.hash)}
-									disabled={loading}
-									style={[styles.revertBtn, { opacity: loading ? 0.4 : 1 }]}
-								>
-									<Text style={{ color: "#ef4444", fontSize: 12, fontWeight: "500" }}>Revert</Text>
-								</Pressable>
-							</View>
-						))}
-					</ScrollView>
-				)}
-
 				{/* Messages */}
-				{!showCommits && <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
+				<ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent}>
 					{initialized && messages.length === 0 && !pendingPreview && (
 						<Text style={{ color: c.textSecondary, fontSize: 13, textAlign: "center", paddingVertical: 24 }}>
 							{t("dream.empty")}
@@ -308,49 +237,48 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					)}
 
 					{messages.map((msg) => (
-						<View key={msg.id ?? `${msg.role}-${msg.content.slice(0, 20)}`}>
-							<View
-								style={[
-									styles.bubble,
-									msg.role === "user"
-										? { alignSelf: "flex-end", backgroundColor: c.accent }
-										: { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" },
-								]}
-							>
-								{msg.role === "user" ? (
-									<Text style={{ color: "#fff", fontSize: 13 }}>{msg.content}</Text>
-								) : (
-									<Markdown style={{
-										body: { color: c.text, fontSize: 13 },
-										code_inline: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 12 },
-										fence: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 11, padding: 8, borderRadius: 6 },
-										link: { color: c.accent },
-									}}>
-										{msg.content}
-									</Markdown>
+						<View
+							key={msg.id ?? `${msg.role}-${msg.content.slice(0, 20)}`}
+							style={[
+								styles.bubble,
+								msg.role === "user"
+									? { alignSelf: "flex-end", backgroundColor: c.accent }
+									: { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" },
+							]}
+						>
+							{msg.role === "user" ? (
+								<Text style={{ color: "#fff", fontSize: 13 }}>{msg.content}</Text>
+							) : (
+								<Markdown style={{
+									body: { color: c.text, fontSize: 13 },
+									code_inline: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 12 },
+									fence: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 11, padding: 8, borderRadius: 6 },
+									link: { color: c.accent },
+								}}>
+									{msg.content}
+								</Markdown>
 								)}
-								{msg.createdAt && (
-									<Text style={{ color: msg.role === "user" ? "rgba(255,255,255,0.5)" : c.textSecondary, fontSize: 10, marginTop: 4 }}>
-										{new Date(msg.createdAt).toLocaleTimeString()}
-									</Text>
-								)}
-							</View>
+							{msg.createdAt && (
+								<Text style={{ color: msg.role === "user" ? "rgba(255,255,255,0.5)" : c.textSecondary, fontSize: 10, marginTop: 4 }}>
+									{new Date(msg.createdAt).toLocaleTimeString()}
+								</Text>
+							)}
 						</View>
 					))}
 
-					{/* Preview — chat bubble with Show Preview / Accept / Decline */}
+					{/* Preview — chat bubble with preview link + Accept / Decline */}
 					{pendingPreview && !loading && (
 						<View style={[styles.bubble, { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" }]}>
-							<Text style={{ color: c.text, fontSize: 13, marginBottom: 6 }}>Preview ready.</Text>
+							<Text style={{ color: c.text, fontSize: 13, marginBottom: 6 }}>Preview ready. ✨</Text>
+							<Pressable onPress={() => { if (Platform.OS === "web") window.open(pendingPreview.previewUrl, "_blank"); }} style={{ marginBottom: 10 }}>
+								<Text style={{ color: c.accent, fontSize: 13 }}>{pendingPreview.previewUrl}</Text>
+							</Pressable>
 							<View style={styles.decisionRow}>
-								<Pressable onPress={() => setShowPreviewPopup(true)} style={[styles.decisionBtn, { backgroundColor: c.accent }]}>
-									<Text style={styles.decisionBtnText}>Show Preview</Text>
-								</Pressable>
 								<Pressable onPress={handleAccept} style={[styles.decisionBtn, { backgroundColor: "#22c55e" }]}>
-									<Text style={styles.decisionBtnText}>Accept</Text>
+									<Text style={styles.decisionBtnText}>Accept ✅</Text>
 								</Pressable>
 								<Pressable onPress={handleDecline} style={[styles.decisionBtn, { backgroundColor: isDark ? "#3a3a3a" : "#e5e7eb" }]}>
-									<Text style={[styles.decisionBtnText, { color: c.text }]}>Decline</Text>
+									<Text style={[styles.decisionBtnText, { color: c.text }]}>Decline ❌</Text>
 								</Pressable>
 							</View>
 						</View>
@@ -366,7 +294,7 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 							)}
 						</View>
 					)}
-				</ScrollView>}
+				</ScrollView>
 
 				{/* Input */}
 				<View style={[styles.inputRow, { borderTopColor: c.border }]}>
@@ -396,29 +324,6 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 				</View>
 			</Pressable>
 
-			{/* Preview popup with iframe — only when user clicks Show Preview */}
-			{Platform.OS === "web" && pendingPreview && showPreviewPopup && (
-				<Popup
-					open
-					onClose={() => setShowPreviewPopup(false)}
-					title="Dream Preview"
-					dark={isDark}
-					width="80vw"
-					maxWidth={1400}
-					height="85vh"
-					overlay={false}
-					zIndex={60}
-					actions={[
-						{ label: "Accept", onClick: () => { setShowPreviewPopup(false); handleAccept(); } },
-						{ label: "Decline", onClick: () => { setShowPreviewPopup(false); handleDecline(); } },
-					]}
-				>
-					<iframe
-						src={pendingPreview.previewUrl}
-						style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
-					/>
-				</Popup>
-			)}
 		</Modal>
 	);
 }
@@ -474,18 +379,20 @@ const styles = StyleSheet.create({
 	},
 	decisionRow: {
 		flexDirection: "row",
+		flexWrap: "wrap",
 		gap: 8,
 		marginTop: 8,
 	},
 	decisionBtn: {
-		flex: 1,
 		borderRadius: 8,
-		paddingVertical: 6,
+		paddingVertical: 7,
+		paddingHorizontal: 14,
 		alignItems: "center",
+		justifyContent: "center",
 	},
 	decisionBtnText: {
 		color: "#fff",
-		fontSize: 12,
+		fontSize: 13,
 		fontWeight: "600",
 	},
 	inputRow: {
@@ -507,16 +414,5 @@ const styles = StyleSheet.create({
 		borderRadius: 16,
 		paddingHorizontal: 14,
 		paddingVertical: 8,
-	},
-	commitRow: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingVertical: 10,
-		borderBottomWidth: StyleSheet.hairlineWidth,
-		gap: 10,
-	},
-	revertBtn: {
-		paddingHorizontal: 10,
-		paddingVertical: 4,
 	},
 });

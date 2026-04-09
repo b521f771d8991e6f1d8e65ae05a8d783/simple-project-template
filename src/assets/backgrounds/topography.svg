@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <rect width="1440" height="900" fill="#f0f8ff"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Inner rings: brighter, thicker -->
+    <ellipse cx="720" cy="430" rx="90" ry="58"
+             stroke="#0071e3" stroke-width="1.8" stroke-opacity="0.55"
+             transform="rotate(-14, 720, 430)"/>
+    <ellipse cx="714" cy="436" rx="165" ry="108"
+             stroke="#0071e3" stroke-width="1.6" stroke-opacity="0.45"
+             transform="rotate(7, 714, 436)"/>
+    <ellipse cx="726" cy="425" rx="250" ry="162"
+             stroke="#0284c7" stroke-width="1.5" stroke-opacity="0.38"
+             transform="rotate(-5, 726, 425)"/>
+    <ellipse cx="718" cy="440" rx="345" ry="220"
+             stroke="#0284c7" stroke-width="1.4" stroke-opacity="0.30"
+             transform="rotate(11, 718, 440)"/>
+    <ellipse cx="724" cy="428" rx="445" ry="285"
+             stroke="#0369a1" stroke-width="1.3" stroke-opacity="0.23"
+             transform="rotate(-9, 724, 428)"/>
+    <ellipse cx="715" cy="438" rx="555" ry="355"
+             stroke="#0369a1" stroke-width="1.2" stroke-opacity="0.17"
+             transform="rotate(4, 715, 438)"/>
+    <ellipse cx="722" cy="432" rx="670" ry="428"
+             stroke="#075985" stroke-width="1.1" stroke-opacity="0.12"
+             transform="rotate(-16, 722, 432)"/>
+    <ellipse cx="720" cy="435" rx="790" ry="500"
+             stroke="#075985" stroke-width="1" stroke-opacity="0.09"
+             transform="rotate(8, 720, 435)"/>
+
+    <!-- Secondary cluster, upper-left -->
+    <ellipse cx="260" cy="160" rx="55" ry="38"
+             stroke="#0071e3" stroke-width="1.4" stroke-opacity="0.35"
+             transform="rotate(-20, 260, 160)"/>
+    <ellipse cx="255" cy="165" rx="110" ry="75"
+             stroke="#0284c7" stroke-width="1.2" stroke-opacity="0.25"
+             transform="rotate(12, 255, 165)"/>
+    <ellipse cx="258" cy="162" rx="175" ry="118"
+             stroke="#0369a1" stroke-width="1" stroke-opacity="0.15"
+             transform="rotate(-6, 258, 162)"/>
+
+    <!-- Secondary cluster, lower-right -->
+    <ellipse cx="1200" cy="740" rx="65" ry="44"
+             stroke="#0071e3" stroke-width="1.4" stroke-opacity="0.30"
+             transform="rotate(18, 1200, 740)"/>
+    <ellipse cx="1205" cy="735" rx="130" ry="88"
+             stroke="#0284c7" stroke-width="1.2" stroke-opacity="0.20"
+             transform="rotate(-10, 1205, 735)"/>
+    <ellipse cx="1198" cy="742" rx="200" ry="135"
+             stroke="#0369a1" stroke-width="1" stroke-opacity="0.12"
+             transform="rotate(5, 1198, 742)"/>
+  </g>
+</svg>

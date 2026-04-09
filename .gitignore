@@ -56,3 +56,4 @@ app-example
 /.cmake
 /.cmake-wasm
 /gen
+/.env.keys

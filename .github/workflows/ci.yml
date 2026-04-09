@@ -1,67 +1,126 @@
-name: Nix Flake ❄️
+# Rapid Release — non-reproducible fast path for development branches
+#
+# Skips Nix and builds directly on the runner for speed (~1 min vs ~10 min).
+# Use this for rapid iteration on feature branches and dev — the tradeoff
+# is that builds are NOT reproducible (they depend on runner state, cached
+# layers, and non-pinned system tools). For reproducible release builds
+# on beta/stable, use the Nix Flake workflow instead.
+#
+# Jobs:
+#   rapid-deploy    — 📱 Expo web + ☁️ Cloudflare Workers deploy
+#                     main → production deploy, other branches → preview version
+#
+# Secrets required:
+#   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
+#   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID
+name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
+    tags:
+      - "v*"
   pull_request:
 
 jobs:
-  build:
+  rapid-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@main
+
+      # ── Environment setup 🔧 ──────────────────────────────────
+      - name: Restore build caches 📦
+        uses: actions/cache@main
+        with:
+          path: |
+            node_modules
+            /tmp/metro-cache
+            /tmp/metro-file-map-*
+          key: build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: build-${{ runner.os }}-
+
+      - name: Rust cache 🦀
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: rapid-deploy
+
+      - name: C++ cache (ccache) ⚡
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ccache-${{ runner.os }}
+
+      - name: Emscripten (WASM/C++) 🌐
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+          actions-cache-folder: .emsdk-cache
+
+      - name: WASM Rust toolchain 🕸️
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo install wasm-pack --locked 2>/dev/null || true
+
+      - name: Install dependencies 🔧
+        run: npm ci
+
+      # ── Build & Deploy 🏗️ ─────────────────────────────────────
+      - name: Build & deploy 🏗️🚀
+        run: |
+          source .env
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              # Production: deploy to live traffic
+              npx wrangler deploy --name "$PROJECT_NAME"
+            else
+              # Preview: upload version with branch alias (no production traffic)
+              npx wrangler versions upload --name "$PROJECT_NAME" \
+                --tag "${{ github.ref_name }}" \
+                --message "Branch: ${{ github.ref_name }}"
+            fi
+          fi
+        env:
+          TMPDIR: /tmp
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  build-docker-images:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-      actions: write
-      id-token: write
-    strategy:
-      matrix:
-        os: [ubuntu-24.04]
-    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@main
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: Build and test Nix Flake
+      - run: nix build .#docker --out-link result-prod
+      - run: nix build .#docker-dev --out-link result-dev
+
+      - name: Log in to GHCR 🔑
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Load and push docker image 🚀
         run: |
-          nix flake check -L --show-trace
-          nix build
-          mkdir ${{ runner.temp }}/result
-          nix copy --no-check-sigs \
-            .#default \
-            --to ${{ runner.temp }}/result
+          docker load < result-prod
+          SHORT_SHA="${GITHUB_SHA::7}"
+          GHCR_IMAGE="ghcr.io/${{ github.repository }}"
+          LOADED_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | head -1)
+          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:$SHORT_SHA"
+          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:latest"
+          docker push "$GHCR_IMAGE:$SHORT_SHA"
+          docker push "$GHCR_IMAGE:latest"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: digests-${{ runner.os }}-${{ runner.arch }}
-          path: ${{ runner.temp }}/result
-          if-no-files-found: error
+      - name: Load and push docker-dev image 🚀
+        run: |
+          docker load < result-dev
+          SHORT_SHA="${GITHUB_SHA::7}"
+          GHCR_IMAGE="ghcr.io/${{ github.repository }}-dev"
+          LOADED_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -v "^ghcr.io" | head -1)
+          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:$SHORT_SHA"
+          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:latest"
+          docker push "$GHCR_IMAGE:$SHORT_SHA"
+          docker push "$GHCR_IMAGE:latest"
 
-      #- name: Push Docker image to GHCR
-      #  if: runner.os == 'Linux' && runner.arch == 'X64'
-      #  env:
-      #    REGISTRY: ghcr.io
-      #    IMAGE_NAME: ${{ github.repository }}
-      #  run: |
-      #    nix build .#docker
-      #    echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-      #    IMAGE_TAG="${GITHUB_SHA::8}"
-      #    docker load < "$(readlink -f result)"
-      #    docker tag "${IMAGE_NAME}:latest" "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-      #    docker tag "${IMAGE_NAME}:latest" "${REGISTRY}/${IMAGE_NAME}:latest"
-      #    docker push "${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-      #    docker push "${REGISTRY}/${IMAGE_NAME}:latest"
-
-      #    source .env
-      #    nix build -L .#default
-      #    if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-      #      npx wrangler deploy --name "$PROJECT_NAME"
-      #    else
-      #      npx wrangler versions upload --name "$PROJECT_NAME" \
-      #        --tag "${{ github.ref_name }}" \
-      #        --message "Branch: ${{ github.ref_name }}"
-      #    fi
-      #  env:
-      #    TMPDIR: /tmp
-      #    CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      #    CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

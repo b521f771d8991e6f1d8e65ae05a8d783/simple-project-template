@@ -43,6 +43,8 @@
         lib.unique (explicit ++ main ++ auto);
     in
     {
+      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.alejandra);
+
       packages = forAllSystems (system:
         let
           pkgs = import nixpkgs {
@@ -115,8 +117,7 @@
               };
             }) rustBinNames
           );
-        in
-        rec {
+        in rec {
           # do not add more targets, use this to build everything
           default = pkgs.buildNpmPackage {
             pname = projectName;
@@ -124,7 +125,7 @@
 
             src = ./.;
 
-            npmDeps = pkgs.importNpmLock { npmRoot = ./.; };
+            npmDeps = pkgs.importNpmLock {npmRoot = ./.;};
             npmConfigHook = pkgs.importNpmLock.npmConfigHook;
 
             nativeBuildInputs = with pkgs; [
@@ -153,19 +154,46 @@
             dontUseCmakeConfigure = true; # this runs during npm run build anyway
 
             buildPhase = ''
+              export HOME=$TMPDIR
               mkdir -p .cargo
               cp ${cargoVendorConfig} .cargo/config.toml
 
               echo "${version}" > VERSION
               npm run build:web
+              npm run build:node
             '';
+
+            outputs = ["out" "deps"];
 
             installPhase = ''
               mkdir -p $out/bin
               cp -r dist/* $out/bin/
+
+              # Copy installed node_modules for docker-dev
+              mkdir -p $deps
+              cp -r node_modules $deps/node_modules
             '';
 
             meta.mainProgram = "main.js";
+          };
+
+          # Production Docker image
+          docker = pkgs.dockerTools.buildLayeredImage {
+            name = projectName;
+            tag = version;
+            contents = [pkgs.busybox];
+            config = {
+              Cmd = ["${default}/bin/${default.meta.mainProgram}"];
+              ExposedPorts = {"8081/tcp" = {};};
+              Volumes = {"/data" = {};};
+              Healthcheck = {
+                Test = ["CMD" "wget" "-qO-" "http://localhost:8081/api/healthcheck"];
+                Interval = 30 * 1000000000;
+                Timeout = 5 * 1000000000;
+                StartPeriod = 10 * 1000000000;
+                Retries = 3;
+              };
+            };
           };
 
           # Tauri desktop app — Expo web frontend + Node sidecar + napi-rs native addon
@@ -211,6 +239,7 @@
             env = commonEnv;
 
             buildPhase = ''
+              export HOME=$TMPDIR
               mkdir -p .cargo
               cp ${cargoVendorConfig} .cargo/config.toml
 
@@ -226,29 +255,59 @@
             meta.mainProgram = projectName;
           };
 
-          # Layered Docker image — Node.js runtime in lower layer, app in top layer
-          docker = pkgs.dockerTools.buildLayeredImage {
-            name = projectName;
-            tag = version;
+          docker-dev = let
+            srcWithoutEnv =
+              builtins.filterSource
+              (path: _: builtins.baseNameOf path != ".env")
+              ./.;
+            devEntrypoint = pkgs.writeShellScriptBin "entrypoint" (builtins.readFile ./scripts/docker-entrypoint.sh);
+          in
+            pkgs.dockerTools.buildLayeredImage {
+              name = "${projectName}-dev";
+              tag = version;
 
-            contents = [
-              pkgs.busybox
-            ];
+              contents =
+                [
+                  pkgs.busybox
+                  pkgs.cacert
+                  pkgs.nix
+                  pkgs.gh
+                  pkgs.nodejs
+                  pkgs.clang
+                  devEntrypoint
+                ]
+                ++ default.nativeBuildInputs ++ default.buildInputs;
 
-            config = {
-              Cmd = [ "${default}/bin/${default.meta.mainProgram}" ];
-              ExposedPorts = { "8081/tcp" = {}; };
-              Volumes = { "/data" = {}; };
-              Healthcheck = {
-                Test = [ "CMD" "${pkgs.wget}/bin/wget" "-qO-" "http://localhost:8081/api/healthcheck" ];
-                Interval = 30 * 1000000000;  # 30s in nanoseconds
-                Timeout = 5 * 1000000000;
-                StartPeriod = 10 * 1000000000;
-                Retries = 3;
+              extraCommands = ''
+                mkdir -p app tmp home
+                cp -r ${srcWithoutEnv}/. app/
+                cp -r ${default.deps}/node_modules app/node_modules
+                cp -r ${default}/bin app/dist
+
+                # put this here so that the files added above are also properly chmodded
+                chmod -R a+rwX app tmp home
+                mkdir -p etc
+
+                printf '[safe]\n\tdirectory = *\n[init]\n\tdefaultBranch = main\n' > etc/gitconfig
+                (cd app && ${pkgs.git}/bin/git init && ${pkgs.git}/bin/git add -A && ${pkgs.git}/bin/git -c user.name=nix -c user.email=nix commit -m "init" --quiet)
+              '';
+
+              config = {
+                User = "1000:1000";
+                Entrypoint = ["/bin/entrypoint"];
+                Cmd = ["node" "dist/main.js"];
+                Env = ["DREAM_MODE_SOURCES=/app" "EXPO_OFFLINE=1" "BROWSER=none" "HOME=/home" "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt" "NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-bundle.crt"];
+                WorkingDir = "/app";
+                ExposedPorts = {
+                  "8081/tcp" = {};
+                  "19200-19999/tcp" = {};
+                };
+                Volumes = {
+                  "/data" = {};
+                  "/home/.claude" = {};
+                };
               };
             };
-          };
-
         } // rustBins
       );
     };

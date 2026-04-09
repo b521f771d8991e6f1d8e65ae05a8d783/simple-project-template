@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ReadingDino } from "@/components/reading-dino";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { LiquidGlass } from "@/components/ui/liquid-glass";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/lib/i18n";
 
@@ -16,37 +17,25 @@ export default function HomeScreen() {
 			<SafeAreaView className="flex-1">
 				<ScrollView
 					className="flex-1"
-					contentContainerClassName="px-6 py-8 gap-8 max-w-xl self-center w-full items-center"
+					contentContainerClassName="px-6 py-8 gap-8 max-w-xl self-center w-full items-center flex-grow justify-center"
 				>
 					<ThemedText type="title">{t("home.title")}</ThemedText>
 					<ReadingDino dark={colorScheme === "dark"} />
 
-					<ThemedView
-						className="rounded-2xl p-4 gap-2 w-full"
-						lightColor="#f9fafb"
-						darkColor="#111"
-					>
+					<LiquidGlass style={{ width: "100%", gap: 6 }}>
 						<ThemedText type="subtitle">{t("home.dreamMode")}</ThemedText>
 						<ThemedText>{t("home.dreamModeDesc")}</ThemedText>
-					</ThemedView>
+					</LiquidGlass>
 
-					<ThemedView
-						className="rounded-2xl p-4 gap-2 w-full"
-						lightColor="#f9fafb"
-						darkColor="#111"
-					>
+					<LiquidGlass style={{ width: "100%", gap: 6 }}>
 						<ThemedText type="subtitle">{t("home.editVSCode")}</ThemedText>
 						<ThemedText>{t("home.editVSCodeDesc")}</ThemedText>
-					</ThemedView>
+					</LiquidGlass>
 
-					<ThemedView
-						className="rounded-2xl p-4 gap-2 w-full"
-						lightColor="#f9fafb"
-						darkColor="#111"
-					>
+					<LiquidGlass style={{ width: "100%", gap: 6 }}>
 						<ThemedText type="subtitle">{t("home.release")}</ThemedText>
 						<ThemedText>{t("home.releaseDesc")}</ThemedText>
-					</ThemedView>
+					</LiquidGlass>
 				</ScrollView>
 			</SafeAreaView>
 		</ThemedView>

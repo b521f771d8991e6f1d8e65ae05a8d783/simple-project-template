@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f0f6ff"/>
+      <stop offset="100%" stop-color="#e8f5f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#sky)"/>
+
+  <!-- Wave 1 — indigo, near top -->
+  <path d="M -60,165 C 140,85 480,115 720,165 C 960,215 1300,195 1500,165 L 1500,950 L -60,950 Z"
+        fill="#0071e3" fill-opacity="0.06"/>
+
+  <!-- Wave 2 — blue, upper-mid -->
+  <path d="M -60,305 C 160,375 510,390 720,310 C 930,230 1270,255 1500,305 L 1500,950 L -60,950 Z"
+        fill="#2997ff" fill-opacity="0.07"/>
+
+  <!-- Wave 3 — sky, center -->
+  <path d="M -60,455 C 180,375 520,405 720,465 C 920,525 1260,500 1500,455 L 1500,950 L -60,950 Z"
+        fill="#34aadc" fill-opacity="0.07"/>
+
+  <!-- Wave 4 — teal, lower-mid -->
+  <path d="M -60,615 C 200,685 545,670 720,610 C 895,550 1230,575 1500,615 L 1500,950 L -60,950 Z"
+        fill="#22c55e" fill-opacity="0.07"/>
+
+  <!-- Wave 5 — green, near bottom -->
+  <path d="M -60,775 C 210,695 555,720 720,780 C 885,840 1225,820 1500,775 L 1500,950 L -60,950 Z"
+        fill="#4ade80" fill-opacity="0.09"/>
+</svg>

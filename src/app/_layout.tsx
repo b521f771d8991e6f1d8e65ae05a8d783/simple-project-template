@@ -7,7 +7,9 @@ import { Platform } from 'react-native';
 import 'react-native-reanimated';
 import '../global.css';
 
-import { type PropsWithChildren } from 'react';
+import { type PropsWithChildren, useMemo } from 'react';
+import { BackgroundLayer } from '@/components/background-layer';
+import { useBackground } from '@/hooks/use-background';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { LanguageContext } from '@/lib/i18n';
 import { useAppSelector, store } from '@/redux/store';
@@ -20,6 +22,7 @@ function LanguageProvider({ children }: PropsWithChildren) {
 
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   document.title = Constants.expoConfig?.name!;
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
 SplashScreen.preventAutoHideAsync();
@@ -28,20 +31,37 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-export default function RootLayout() {
+function AppShell() {
   const colorScheme = useColorScheme();
+  const { pattern, color, image } = useBackground();
+  const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const hasCustomBg = pattern !== 'none' || color !== null || image !== null;
+  const theme = useMemo(() => {
+    if (!hasCustomBg) return baseTheme;
+    return {
+      ...baseTheme,
+      colors: { ...baseTheme.colors, background: 'transparent', card: 'transparent' },
+    };
+  }, [hasCustomBg, baseTheme]);
 
   return (
+    <LanguageProvider>
+      <ThemeProvider value={theme}>
+        <BackgroundLayer />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </LanguageProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <Provider store={store}>
-      <LanguageProvider>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
-      </LanguageProvider>
+      <AppShell />
     </Provider>
   );
 }
