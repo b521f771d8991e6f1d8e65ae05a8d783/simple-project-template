@@ -12,6 +12,7 @@ export function useTranslation() {
 
 const en = {
 	"nav.home": "Home",
+	"nav.gallery": "Gallery",
 	"nav.explore": "About",
 	"nav.dream": "Dream",
 
@@ -47,6 +48,7 @@ type Translations = typeof en;
 
 const de: Translations = {
 	"nav.home": "Start",
+	"nav.gallery": "Galerie",
 	"nav.explore": "Über",
 	"nav.dream": "Dream",
 	"home.title": "Willkommen",
@@ -77,6 +79,7 @@ const de: Translations = {
 
 const fr: Translations = {
 	"nav.home": "Accueil",
+	"nav.gallery": "Galerie",
 	"nav.explore": "À propos",
 	"nav.dream": "Dream",
 	"home.title": "Bienvenue",
@@ -107,6 +110,7 @@ const fr: Translations = {
 
 const es: Translations = {
 	"nav.home": "Inicio",
+	"nav.gallery": "Galería",
 	"nav.explore": "Acerca de",
 	"nav.dream": "Dream",
 	"home.title": "Bienvenido",
@@ -137,6 +141,7 @@ const es: Translations = {
 
 const it: Translations = {
 	"nav.home": "Home",
+	"nav.gallery": "Galleria",
 	"nav.explore": "Info",
 	"nav.dream": "Dream",
 	"home.title": "Benvenuto",
@@ -167,6 +172,7 @@ const it: Translations = {
 
 const pt: Translations = {
 	"nav.home": "Início",
+	"nav.gallery": "Galeria",
 	"nav.explore": "Sobre",
 	"nav.dream": "Dream",
 	"home.title": "Bem-vindo",
@@ -197,6 +203,7 @@ const pt: Translations = {
 
 const ja: Translations = {
 	"nav.home": "ホーム",
+	"nav.gallery": "ギャラリー",
 	"nav.explore": "概要",
 	"nav.dream": "Dream",
 	"home.title": "ようこそ",
@@ -227,6 +234,7 @@ const ja: Translations = {
 
 const zh: Translations = {
 	"nav.home": "首页",
+	"nav.gallery": "画廊",
 	"nav.explore": "关于",
 	"nav.dream": "Dream",
 	"home.title": "欢迎",
@@ -257,6 +265,7 @@ const zh: Translations = {
 
 const ko: Translations = {
 	"nav.home": "홈",
+	"nav.gallery": "갤러리",
 	"nav.explore": "소개",
 	"nav.dream": "Dream",
 	"home.title": "환영합니다",
@@ -287,6 +296,7 @@ const ko: Translations = {
 
 const he: Translations = {
 	"nav.home": "בית",
+	"nav.gallery": "גלריה",
 	"nav.explore": "אודות",
 	"nav.dream": "Dream",
 	"home.title": "ברוכים הבאים",
@@ -317,6 +327,7 @@ const he: Translations = {
 
 const la: Translations = {
 	"nav.home": "Domus",
+	"nav.gallery": "Pinacotheca",
 	"nav.explore": "De Nobis",
 	"nav.dream": "Dream",
 	"home.title": "Salve",
