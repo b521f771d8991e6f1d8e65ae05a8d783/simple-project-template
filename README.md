@@ -1,6 +1,7 @@
 # simple-project-template
 
 Cross-platform app: Expo (React Native) + TypeScript. Runs on Node.js, Cloudflare Workers, and Tauri desktop.
+Supports native programming languages (Rust and (Objective) C/++) compiled either as native code (tauri (as an npm addon), react native apps (using expo)), or wasm (using emscripen and wasm-bindgen).
 
 ## Quick Start
 
