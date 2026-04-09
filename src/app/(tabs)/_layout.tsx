@@ -125,7 +125,7 @@ function NavBar({
 
 			<Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
 				<Pressable style={StyleSheet.absoluteFill} onPress={() => setMenuOpen(false)} />
-				<View style={[styles.menu, { backgroundColor: c.background, borderColor: c.border }, menuPositionStyle]}>
+				<View style={[styles.menu, { backgroundColor: colorScheme === "dark" ? "rgba(45,45,47,0.88)" : "rgba(255,255,255,0.88)", borderColor: c.border, ...(Platform.OS === "web" ? { backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)" } : {}) } as any, menuPositionStyle]}>
 					{aboutIndex !== -1 && (
 						<Pressable
 							onPress={() => {
@@ -153,7 +153,7 @@ function NavBar({
 						<IconSymbol size={12} name="chevron.right" color={c.icon} />
 					</Pressable>
 					{langOpen && (
-						<View style={[styles.langFlyout, { backgroundColor: c.background, borderColor: c.border }]}>
+						<View style={[styles.langFlyout, { backgroundColor: colorScheme === "dark" ? "rgba(45,45,47,0.88)" : "rgba(255,255,255,0.88)", borderColor: c.border, ...(Platform.OS === "web" ? { backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)" } : {}) } as any]}>
 							{LANGUAGES.map((lang) => (
 								<Pressable
 									key={lang.code}

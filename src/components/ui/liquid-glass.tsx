@@ -1,9 +1,12 @@
-import { View, StyleSheet, Platform, type ViewStyle, type StyleProp } from "react-native";
+import { View, Text, StyleSheet, Platform, type ViewStyle, type StyleProp } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
 interface LiquidGlassProps {
 	children: React.ReactNode;
 	style?: StyleProp<ViewStyle>;
+	/** Optional section title rendered above the glass surface */
+	title?: string;
 	/** Corner radius — defaults to 20 for a soft card feel */
 	radius?: number;
 	/** Extra padding inside the glass surface */
@@ -14,8 +17,9 @@ interface LiquidGlassProps {
  * A frosted-glass surface that blurs content behind it.
  * On web uses backdrop-filter; on native falls back to a semi-transparent surface.
  */
-export function LiquidGlass({ children, style, radius = 20, padding = 16 }: LiquidGlassProps) {
+export function LiquidGlass({ children, style, title, radius = 20, padding = 16 }: LiquidGlassProps) {
 	const colorScheme = useColorScheme();
+	const c = Colors[colorScheme];
 	const dark = colorScheme === "dark";
 
 	const bg = dark ? "rgba(45,45,47,0.65)" : "rgba(255,255,255,0.65)";
@@ -31,21 +35,26 @@ export function LiquidGlass({ children, style, radius = 20, padding = 16 }: Liqu
 			: {};
 
 	return (
-		<View
-			style={[
-				styles.base,
-				{
-					backgroundColor: bg,
-					borderColor: border,
-					borderRadius: radius,
-					padding,
-					shadowColor: shadow,
-					...webExtra,
-				},
-				style,
-			]}
-		>
-			{children}
+		<View>
+			{title ? (
+				<Text style={[styles.title, { color: c.textSecondary }]}>{title}</Text>
+			) : null}
+			<View
+				style={[
+					styles.base,
+					{
+						backgroundColor: bg,
+						borderColor: border,
+						borderRadius: radius,
+						padding,
+						shadowColor: shadow,
+						...webExtra,
+					},
+					style,
+				]}
+			>
+				{children}
+			</View>
 		</View>
 	);
 }
@@ -57,5 +66,12 @@ const styles = StyleSheet.create({
 		shadowOpacity: 1,
 		shadowRadius: 16,
 		elevation: 6,
+	},
+	title: {
+		fontSize: 11,
+		fontWeight: "600",
+		letterSpacing: 0.8,
+		textTransform: "uppercase",
+		marginBottom: 10,
 	},
 });

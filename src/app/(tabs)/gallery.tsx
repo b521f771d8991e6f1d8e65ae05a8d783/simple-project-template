@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { ScrollView, View, Text, StyleSheet } from "react-native";
+import { ScrollView, View, Text, Pressable, StyleSheet } from "react-native";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useBackground } from "@/hooks/use-background";
+import { PATTERN_OPTIONS, COLOR_PRESETS, getPatternRenderer } from "@/lib/background-patterns";
+import Svg, { Rect as SvgRect } from "react-native-svg";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Collapsible } from "@/components/ui/collapsible";
@@ -15,16 +18,6 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ReadingDino } from "@/components/reading-dino";
 import { SleepingDino } from "@/components/sleeping-dino";
 import { CodingDino } from "@/components/coding-dino";
-
-function SectionHeading({ title }: { title: string }) {
-	const colorScheme = useColorScheme();
-	const c = Colors[colorScheme];
-	return (
-		<Text style={[styles.sectionHeading, { color: c.textSecondary }]}>
-			{title}
-		</Text>
-	);
-}
 
 function Row({ children, label }: { children: React.ReactNode; label?: string }) {
 	const colorScheme = useColorScheme();
@@ -41,6 +34,7 @@ export default function GalleryScreen() {
 	const colorScheme = useColorScheme();
 	const c = Colors[colorScheme];
 	const dark = colorScheme === "dark";
+	const bg = useBackground();
 	const [toggle1, setToggle1] = useState(true);
 	const [toggle2, setToggle2] = useState(false);
 	const [check1, setCheck1] = useState(true);
@@ -48,7 +42,7 @@ export default function GalleryScreen() {
 	const [check3, setCheck3] = useState(true);
 	return (
 		<ScrollView
-			style={{ flex: 1, backgroundColor: c.background }}
+			style={{ flex: 1, backgroundColor: (bg.pattern !== "none" || bg.color) ? "transparent" : c.background }}
 			contentContainerStyle={styles.container}
 			contentInsetAdjustmentBehavior="automatic"
 		>
@@ -59,8 +53,7 @@ export default function GalleryScreen() {
 			</Text>
 
 			{/* ── Dinosaurs ─────────────────────────────────────── */}
-			<SectionHeading title="Dinosaurs" />
-			<LiquidGlass style={styles.dinoCard}>
+			<LiquidGlass title="Dinosaurs" style={styles.dinoCard}>
 				<View style={styles.dinoGrid}>
 					<View style={styles.dinoItem}>
 						<ReadingDino dark={dark} />
@@ -78,8 +71,7 @@ export default function GalleryScreen() {
 			</LiquidGlass>
 
 			{/* ── Typography ────────────────────────────────────── */}
-			<SectionHeading title="Typography" />
-			<LiquidGlass style={styles.typeCard}>
+			<LiquidGlass title="Typography" style={styles.typeCard}>
 				<View style={styles.typeRow}>
 					<Text style={[styles.typeLabel, { color: c.textSecondary }]}>Title</Text>
 					<ThemedText type="title">The quick brown fox</ThemedText>
@@ -107,8 +99,7 @@ export default function GalleryScreen() {
 			</LiquidGlass>
 
 			{/* ── Buttons ───────────────────────────────────────── */}
-			<SectionHeading title="Buttons" />
-			<LiquidGlass style={styles.typeCard}>
+			<LiquidGlass title="Buttons" style={styles.typeCard}>
 				{(
 					[
 						["primary",     "Primary"],
@@ -133,8 +124,7 @@ export default function GalleryScreen() {
 			</LiquidGlass>
 
 			{/* ── Toggle ────────────────────────────────────────── */}
-			<SectionHeading title="Toggle" />
-			<LiquidGlass style={styles.card}>
+			<LiquidGlass title="Toggle" style={styles.card}>
 				<View style={styles.toggleRow}>
 					<Text style={[styles.toggleLabel, { color: c.text }]}>Enabled</Text>
 					<Toggle value={toggle1} onValueChange={setToggle1} />
@@ -150,8 +140,7 @@ export default function GalleryScreen() {
 			</LiquidGlass>
 
 			{/* ── Checkbox ──────────────────────────────────────── */}
-			<SectionHeading title="Checkbox" />
-			<LiquidGlass style={styles.card}>
+			<LiquidGlass title="Checkbox" style={styles.card}>
 				<Row label="Checked">
 					<Checkbox checked={check1} onValueChange={setCheck1} />
 				</Row>
@@ -167,8 +156,7 @@ export default function GalleryScreen() {
 			</LiquidGlass>
 
 			{/* ── Logo ─────────────────────────────────────────── */}
-			<SectionHeading title="Logo" />
-			<LiquidGlass style={styles.card}>
+			<LiquidGlass title="Logo" style={styles.card}>
 				<View style={styles.logoRow}>
 					{[16, 24, 36, 48].map((size) => (
 						<View key={size} style={styles.logoItem}>
@@ -180,8 +168,7 @@ export default function GalleryScreen() {
 			</LiquidGlass>
 
 			{/* ── Icons ────────────────────────────────────────── */}
-			<SectionHeading title="Icons" />
-			<LiquidGlass style={styles.card}>
+			<LiquidGlass title="Icons" style={styles.card}>
 				<View style={styles.iconGrid}>
 					{(
 						[
@@ -202,16 +189,14 @@ export default function GalleryScreen() {
 			</LiquidGlass>
 
 			{/* ── HelloWave ────────────────────────────────────── */}
-			<SectionHeading title="HelloWave" />
-			<LiquidGlass style={styles.card}>
+			<LiquidGlass title="HelloWave" style={styles.card}>
 				<Row label="Animated SVG waving hand">
 					<HelloWave />
 				</Row>
 			</LiquidGlass>
 
 			{/* ── Collapsible ──────────────────────────────────── */}
-			<SectionHeading title="Collapsible" />
-			<LiquidGlass style={styles.card}>
+			<LiquidGlass title="Collapsible" style={styles.card}>
 				<Collapsible title="Expand me">
 					<ThemedText type="body">
 						Hidden content revealed on tap. Great for FAQs, details, or long descriptions.
@@ -223,16 +208,14 @@ export default function GalleryScreen() {
 			</LiquidGlass>
 
 			{/* ── ThemedView ───────────────────────────────────── */}
-			<SectionHeading title="ThemedView" />
-			<LiquidGlass style={styles.card}>
+			<LiquidGlass title="ThemedView" style={styles.card}>
 				<ThemedView style={styles.themedViewDemo}>
 					<ThemedText type="body">ThemedView adapts its background to the current theme.</ThemedText>
 				</ThemedView>
 			</LiquidGlass>
 
 			{/* ── LiquidGlass ──────────────────────────────────── */}
-			<SectionHeading title="LiquidGlass" />
-			<LiquidGlass radius={28} style={styles.card}>
+			<LiquidGlass title="LiquidGlass" radius={28} style={styles.card}>
 				<ThemedText type="headline">You are looking at one right now.</ThemedText>
 				<ThemedText type="body">Frosted glass surface with blur, border, and shadow.</ThemedText>
 				<View style={styles.glassRow}>
@@ -248,9 +231,75 @@ export default function GalleryScreen() {
 				</View>
 			</LiquidGlass>
 
+			{/* ── Background Color ────────────────────────────── */}
+			<LiquidGlass title="Background Color" style={styles.card}>
+				<View style={styles.bgGrid}>
+					{COLOR_PRESETS.map((preset) => {
+						const active = bg.color === preset.value;
+						const display = preset.value ?? c.background;
+						return (
+							<View key={preset.label} style={styles.colorItem}>
+								<Pressable
+									onPress={() => bg.setColor(preset.value)}
+									style={[
+										styles.colorTile,
+										{
+											backgroundColor: display,
+											borderColor: active ? c.accent : c.border,
+											borderWidth: active ? 2 : StyleSheet.hairlineWidth,
+										},
+									]}
+								/>
+								<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
+									{preset.label}
+								</Text>
+							</View>
+						);
+					})}
+				</View>
+			</LiquidGlass>
+
+			{/* ── Background Pattern ─────────────────────────── */}
+			<LiquidGlass title="Background Pattern" style={styles.card}>
+				<View style={styles.bgGrid}>
+					{PATTERN_OPTIONS.map((opt) => {
+						const active = bg.pattern === opt.key;
+						const renderer = getPatternRenderer(opt.key);
+						return (
+							<Pressable
+								key={opt.key}
+								onPress={() => bg.setPattern(opt.key)}
+								style={[
+									styles.bgTile,
+									{
+										borderColor: active ? c.accent : c.border,
+										borderWidth: active ? 2 : StyleSheet.hairlineWidth,
+										backgroundColor: bg.color ?? c.background,
+									},
+								]}
+							>
+								{renderer && (
+									<Svg
+										width="100%"
+										height="100%"
+										style={StyleSheet.absoluteFill}
+										pointerEvents="none"
+									>
+										<SvgRect width="100%" height="100%" fill={bg.color ?? c.background} />
+										{renderer(c.accent)}
+									</Svg>
+								)}
+								<Text style={[styles.bgLabel, { color: active ? c.accent : c.textSecondary }]}>
+									{opt.label}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
+			</LiquidGlass>
+
 			{/* ── Color Palette ────────────────────────────────── */}
-			<SectionHeading title="Color Palette" />
-			<LiquidGlass style={styles.card}>
+			<LiquidGlass title="Color Palette" style={styles.card}>
 				<View style={styles.paletteGrid}>
 					{(
 						[
@@ -287,6 +336,7 @@ const styles = StyleSheet.create({
 	inner: {
 		width: "100%",
 		maxWidth: 720,
+		gap: 24,
 	},
 	pageTitle: {
 		fontSize: 34,
@@ -297,14 +347,6 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		marginTop: 4,
 		marginBottom: 8,
-	},
-	sectionHeading: {
-		fontSize: 11,
-		fontWeight: "600",
-		letterSpacing: 0.8,
-		textTransform: "uppercase",
-		marginTop: 28,
-		marginBottom: 10,
 	},
 	card: {
 		gap: 12,
@@ -428,5 +470,35 @@ const styles = StyleSheet.create({
 	swatchLabel: {
 		fontSize: 10,
 		textAlign: "center",
+	},
+	bgGrid: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 10,
+	},
+	colorItem: {
+		alignItems: "center",
+		gap: 4,
+	},
+	colorTile: {
+		width: 56,
+		height: 56,
+		borderRadius: 28,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	bgTile: {
+		width: 140,
+		height: 140,
+		borderRadius: 70,
+		alignItems: "center",
+		justifyContent: "flex-end",
+		paddingBottom: 14,
+		overflow: "hidden",
+	},
+	bgLabel: {
+		fontSize: 10,
+		fontWeight: "500",
+		zIndex: 1,
 	},
 });

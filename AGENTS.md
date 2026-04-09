@@ -117,6 +117,10 @@ The app must be readable and usable across **web** (desktop + mobile browsers), 
 - On web, ensure tap targets are at least 44x44px (Apple's minimum) even though web doesn't enforce this.
 - Prefer `ScrollView` over fixed-height containers — content should scroll naturally on small screens.
 
+## Image Format Policy
+
+**Always use SVGs.** All icons, illustrations, backgrounds, patterns, and decorative graphics must be created as inline SVG using `react-native-svg` components or SVG markup strings (for CSS `backgroundImage` data URIs). Raster image formats (PNG, JPG, WebP, GIF) should only be used when there is no viable SVG alternative — for example, photographs or externally-provided assets that cannot be converted. When in doubt, default to SVG.
+
 ## React Native — No Plain HTML
 
 This is a **React Native / Expo** app. The frontend must be written exclusively using React Native primitives and the libraries already installed.

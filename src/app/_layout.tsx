@@ -7,7 +7,9 @@ import { Platform } from 'react-native';
 import 'react-native-reanimated';
 import '../global.css';
 
-import { type PropsWithChildren } from 'react';
+import { type PropsWithChildren, useMemo } from 'react';
+import { BackgroundLayer } from '@/components/background-layer';
+import { useBackground } from '@/hooks/use-background';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { LanguageContext } from '@/lib/i18n';
 import { useAppSelector, store } from '@/redux/store';
@@ -30,10 +32,21 @@ export const unstable_settings = {
 
 function AppShell() {
   const colorScheme = useColorScheme();
+  const { pattern, color } = useBackground();
+  const baseTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+  const hasCustomBg = pattern !== 'none' || color !== null;
+  const theme = useMemo(() => {
+    if (!hasCustomBg) return baseTheme;
+    return {
+      ...baseTheme,
+      colors: { ...baseTheme.colors, background: 'transparent', card: 'transparent' },
+    };
+  }, [hasCustomBg, baseTheme]);
 
   return (
     <LanguageProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={theme}>
+        <BackgroundLayer />
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
