@@ -56,6 +56,9 @@ All build orchestration uses npm scripts.
 # UI Design
 
 The UI follows one rule: **if it doesn't need to be there, remove it.** Every screen should feel like a native iOS app — simple, focused, content-first.
+**All UI work must follow [Apple's Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) under all circumstances.** When in doubt about any design decision, defer to the HIG. The principles below are derived from the HIG and must be applied consistently.
+
+The UI follows Apple's Human Interface Guidelines: **simple, focused, and content-first**. Every screen should feel like it could ship as a native iOS app.
 
 ### Principles
 
@@ -107,6 +110,11 @@ The UI follows one rule: **if it doesn't need to be there, remove it.** Every sc
 # React Native — No Plain HTML
 
 This is a **React Native / Expo** app. Never use HTML elements (`<div>`, `<span>`, `<p>`, etc.) or DOM APIs (`document`, `window`). Use React Native primitives: `<View>`, `<Text>`, `<Pressable>`, `<ScrollView>`, `<Image>`.
+## Image Format Policy
+
+**Always use SVGs.** All icons, illustrations, backgrounds, patterns, and decorative graphics must be created as inline SVG using `react-native-svg` components or SVG markup strings (for CSS `backgroundImage` data URIs). Raster image formats (PNG, JPG, WebP, GIF) should only be used when there is no viable SVG alternative — for example, photographs or externally-provided assets that cannot be converted. When in doubt, default to SVG.
+
+## React Native — No Plain HTML
 
 # Styling
 

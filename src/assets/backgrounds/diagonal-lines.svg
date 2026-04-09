@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <rect width="1440" height="900" fill="#fbfbfd"/>
+  <defs>
+    <!-- Diagonal stripe tile: lines run at 45° -->
+    <pattern id="diag" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="28" stroke="#0071e3" stroke-width="1.4" stroke-opacity="0.10"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#fbfbfd" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#fbfbfd" stop-opacity="0.55"/>
+    </radialGradient>
+  </defs>
+  <rect width="1440" height="900" fill="url(#diag)"/>
+  <rect width="1440" height="900" fill="url(#vignette)"/>
+</svg>
