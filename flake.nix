@@ -103,7 +103,6 @@
                 pkgs.gh
                 pkgs.nodejs
                 pkgs.clang
-                pkgs.landrun
                 devEntrypoint
               ]
               ++ default.nativeBuildInputs ++ default.buildInputs;

@@ -252,9 +252,7 @@ export async function POST(req: Request): Promise<Response> {
 			let summary: string | undefined;
 
 			await new Promise<void>((resolve, reject) => {
-				const proc = spawn("sandbox.sh", [
-						cloneDir, "--rw-home", "--", "claude", ...claudeArgs,
-					], {
+				const proc = spawn("claude", claudeArgs, {
 					cwd: cloneDir,
 					env: { ...process.env, PATH: `${cloneDir}/node_modules/.bin:${process.env.PATH}` },
 					stdio: ["ignore", "pipe", "pipe"],
@@ -333,8 +331,8 @@ export async function POST(req: Request): Promise<Response> {
 			const port = await findFreePort();
 			const previewUrl = `http://localhost:${port}`;
 
-			const devServer = spawn("sandbox.sh", [
-					cloneDir, "--", "npx", "expo", "start", "--web", "--port", String(port),
+			const devServer = spawn("npx", [
+					"expo", "start", "--web", "--port", String(port),
 				], {
 				cwd: cloneDir,
 				env: { ...process.env, PATH: `${cloneDir}/node_modules/.bin:${process.env.PATH}`, DREAM_MODE_SOURCES: "", DREAM_PREVIEW: "1", BROWSER: "none" },

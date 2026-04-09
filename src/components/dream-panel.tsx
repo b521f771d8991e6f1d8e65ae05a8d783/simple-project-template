@@ -267,19 +267,19 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 						</View>
 					))}
 
-					{/* Preview — chat bubble with Show Preview / Accept / Decline */}
+					{/* Preview — chat bubble with preview link + Accept / Decline */}
 					{pendingPreview && !loading && (
 						<View style={[styles.bubble, { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" }]}>
-							<Text style={{ color: c.text, fontSize: 13, marginBottom: 6 }}>Preview ready.</Text>
+							<Text style={{ color: c.text, fontSize: 13, marginBottom: 6 }}>Preview ready. ✨</Text>
+							<Pressable onPress={() => { if (Platform.OS === "web") window.open(pendingPreview.previewUrl, "_blank"); }} style={{ marginBottom: 10 }}>
+								<Text style={{ color: c.accent, fontSize: 13 }}>{pendingPreview.previewUrl}</Text>
+							</Pressable>
 							<View style={styles.decisionRow}>
-								<Pressable onPress={() => { if (Platform.OS === "web") window.open(pendingPreview.previewUrl, "_blank"); }} style={[styles.decisionBtn, { backgroundColor: c.accent }]}>
-									<Text style={styles.decisionBtnText}>Show Preview</Text>
-								</Pressable>
 								<Pressable onPress={handleAccept} style={[styles.decisionBtn, { backgroundColor: "#22c55e" }]}>
-									<Text style={styles.decisionBtnText}>Send to Developer</Text>
+									<Text style={styles.decisionBtnText}>Accept ✅</Text>
 								</Pressable>
 								<Pressable onPress={handleDecline} style={[styles.decisionBtn, { backgroundColor: isDark ? "#3a3a3a" : "#e5e7eb" }]}>
-									<Text style={[styles.decisionBtnText, { color: c.text }]}>Decline</Text>
+									<Text style={[styles.decisionBtnText, { color: c.text }]}>Decline ❌</Text>
 								</Pressable>
 							</View>
 						</View>
@@ -380,18 +380,20 @@ const styles = StyleSheet.create({
 	},
 	decisionRow: {
 		flexDirection: "row",
+		flexWrap: "wrap",
 		gap: 8,
 		marginTop: 8,
 	},
 	decisionBtn: {
-		flex: 1,
 		borderRadius: 8,
-		paddingVertical: 6,
+		paddingVertical: 7,
+		paddingHorizontal: 14,
 		alignItems: "center",
+		justifyContent: "center",
 	},
 	decisionBtnText: {
 		color: "#fff",
-		fontSize: 12,
+		fontSize: 13,
 		fontWeight: "600",
 	},
 	inputRow: {
