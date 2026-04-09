@@ -64,13 +64,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Upload build artifacts 📤
-        uses: actions/upload-artifact@main
-        with:
-          name: result-cloudflare-worker-rapid-release
-          path: dist/
-          if-no-files-found: error
-
   build-docker-images:
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     runs-on: ubuntu-latest
