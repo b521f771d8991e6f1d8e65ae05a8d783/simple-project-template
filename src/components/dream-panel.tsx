@@ -237,33 +237,32 @@ export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 					)}
 
 					{messages.map((msg) => (
-						<View key={msg.id ?? `${msg.role}-${msg.content.slice(0, 20)}`}>
-							<View
-								style={[
-									styles.bubble,
-									msg.role === "user"
-										? { alignSelf: "flex-end", backgroundColor: c.accent }
-										: { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" },
-								]}
-							>
-								{msg.role === "user" ? (
-									<Text style={{ color: "#fff", fontSize: 13 }}>{msg.content}</Text>
-								) : (
-									<Markdown style={{
-										body: { color: c.text, fontSize: 13 },
-										code_inline: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 12 },
-										fence: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 11, padding: 8, borderRadius: 6 },
-										link: { color: c.accent },
-									}}>
-										{msg.content}
-									</Markdown>
+						<View
+							key={msg.id ?? `${msg.role}-${msg.content.slice(0, 20)}`}
+							style={[
+								styles.bubble,
+								msg.role === "user"
+									? { alignSelf: "flex-end", backgroundColor: c.accent }
+									: { alignSelf: "flex-start", backgroundColor: isDark ? "#242424" : "#f0f0f0" },
+							]}
+						>
+							{msg.role === "user" ? (
+								<Text style={{ color: "#fff", fontSize: 13 }}>{msg.content}</Text>
+							) : (
+								<Markdown style={{
+									body: { color: c.text, fontSize: 13 },
+									code_inline: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 12 },
+									fence: { backgroundColor: isDark ? "#333" : "#e0e0e0", color: c.text, fontSize: 11, padding: 8, borderRadius: 6 },
+									link: { color: c.accent },
+								}}>
+									{msg.content}
+								</Markdown>
 								)}
-								{msg.createdAt && (
-									<Text style={{ color: msg.role === "user" ? "rgba(255,255,255,0.5)" : c.textSecondary, fontSize: 10, marginTop: 4 }}>
-										{new Date(msg.createdAt).toLocaleTimeString()}
-									</Text>
-								)}
-							</View>
+							{msg.createdAt && (
+								<Text style={{ color: msg.role === "user" ? "rgba(255,255,255,0.5)" : c.textSecondary, fontSize: 10, marginTop: 4 }}>
+									{new Date(msg.createdAt).toLocaleTimeString()}
+								</Text>
+							)}
 						</View>
 					))}
 
