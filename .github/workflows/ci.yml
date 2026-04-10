@@ -8,9 +8,11 @@ name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
+  delete:
 
 jobs:
   build-and-deploy:
+    if: github.event_name != 'delete'
     strategy:
       matrix:
         runner:
@@ -26,7 +28,6 @@ jobs:
         with:
           primary-key: nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-
-          purge: true
 
       - run: nix build . -L --show-trace
 
@@ -64,14 +65,12 @@ jobs:
           docker load < result-prod
           PROD_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | head -1)
           docker tag "$PROD_IMAGE" "$GHCR_PROD:$BRANCH_TAG"
-          docker push "$GHCR_PROD:$BRANCH_TAG" &
+          docker push "$GHCR_PROD:$BRANCH_TAG"
 
           docker load < result-dev
           DEV_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -v "^ghcr.io" | head -1)
           docker tag "$DEV_IMAGE" "$GHCR_DEV:$BRANCH_TAG"
-          docker push "$GHCR_DEV:$BRANCH_TAG" &
-
-          wait
+          docker push "$GHCR_DEV:$BRANCH_TAG" 
 
       - name: Deploy to Cloudflare 🪂
         if: matrix.runner.arch == 'x86_64'
@@ -80,16 +79,29 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             if [ "${{ github.ref }}" = "refs/heads/main" ]; then
               # Production: deploy to live traffic
-              nix run nixpkgs#wrangler -- deploy --name "$PROJECT_NAME"
+              npx wrangler -- deploy --name "$PROJECT_NAME"
             else
               # Preview: upload version with branch alias (no production traffic)
-              nix run nixpkgs#wrangler -- versions upload --name "$PROJECT_NAME" \
+              npx wrangler -- versions upload --name "$PROJECT_NAME" \
                 --tag "${{ github.ref_name }}" \
                 --message "Branch: ${{ github.ref_name }}"
             fi
           fi
-          wait  # wait for background docker push if it's still running
         env:
           TMPDIR: /tmp
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  cleanup-images:
+    if: ${{ !cancelled() }}
+    needs: [build-and-deploy]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@main
+      - name: Clean up stale Docker images 🧹
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: .github/workflows/cleanup-images.sh
