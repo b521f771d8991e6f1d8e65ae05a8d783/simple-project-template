@@ -25,6 +25,7 @@ jobs:
 
       - uses: actions/cache@main
         with:
+          save-always: true
           path: /nix
           key: nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-${{ hashFiles('flake.lock') }}
           restore-keys: |

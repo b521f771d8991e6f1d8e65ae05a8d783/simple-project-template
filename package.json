@@ -13,23 +13,13 @@
     "generate:icons": "tsx scripts/generate-icons.ts"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^2.1.91",
-    "@dotenvx/dotenvx": "^1.59.1",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "^3.0.2",
     "@react-navigation/bottom-tabs": "^7.15.9",
     "@react-navigation/elements": "^2.9.14",
     "@react-navigation/native": "^7.2.2",
     "@reduxjs/toolkit": "^2.11.2",
-    "@resvg/resvg-js": "^2.6.2",
-    "@types/compression": "^1.8.1",
-    "@types/express": "^5.0.6",
-    "@types/morgan": "^1.9.10",
-    "@types/react": "~19.1.17",
     "compression": "^1.8.1",
-    "esbuild": "^0.27.7",
-    "eslint": "^9.39.4",
-    "eslint-config-expo": "~10.0.0",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
     "expo-font": "~14.0.11",
@@ -60,10 +50,22 @@
     "react-native-web": "~0.21.2",
     "react-native-worklets": "0.5.1",
     "react-redux": "^9.2.0",
+    "@anthropic-ai/claude-code": "^2.1.91"
+  },
+  "devDependencies": {
+    "@dotenvx/dotenvx": "^1.59.1",
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/compression": "^1.8.1",
+    "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
+    "@types/nodemailer": "^8.0.0",
+    "@types/react": "~19.1.17",
+    "esbuild": "^0.27.7",
+    "eslint": "^9.39.4",
+    "eslint-config-expo": "~10.0.0",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.3",
-    "wrangler": "^4.80.0",
-    "@types/nodemailer": "^8.0.0"
+    "wrangler": "^4.80.0"
   },
   "private": true
 }
