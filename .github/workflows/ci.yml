@@ -60,22 +60,23 @@ jobs:
           nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-dev "docker://$GHCR_IMAGE:$SHORT_SHA"
           nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-dev "docker://$GHCR_IMAGE:latest"
 
-      #- name: Deploy to Cloudflare 🪂
-      #  if: matrix.runner.arch == 'x86_64'
-      #  run: |
-      #    source .env
-      #    if [ "${{ github.event_name }}" = "push" ]; then
-      #      if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-      #        # Production: deploy to live traffic
-      #        npx wrangler deploy --name "$PROJECT_NAME"
-      #      else
-      #        # Preview: upload version with branch alias (no production traffic)
-      #        npx wrangler versions upload --name "$PROJECT_NAME" \
-      #          --tag "${{ github.ref_name }}" \
-      #          --message "Branch: ${{ github.ref_name }}"
-      #      fi
-      #    fi
-      #  env:
-      #    TMPDIR: /tmp
-      #    CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      #    CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Deploy to Cloudflare 🪂
+        if: matrix.runner.arch == 'x86_64'
+        run: |
+          source .env
+          if [ "${{ github.event_name }}" = "push" ]; then
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              # Production: deploy to live traffic
+              npx wrangler deploy --name "$PROJECT_NAME"
+            else
+              # Preview: upload version with branch alias (no production traffic)
+              npx wrangler versions upload --name "$PROJECT_NAME" \
+                --tag "${{ github.ref_name }}" \
+                --message "Branch: ${{ github.ref_name }}"
+            fi
+          fi
+          wait  # wait for background docker push if it's still running
+        env:
+          TMPDIR: /tmp
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

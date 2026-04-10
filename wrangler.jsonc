@@ -16,21 +16,21 @@
         {
             "type": "Text",
             "globs": [
-                "result/bin/server/**/*.json"
+                "server/**/*.json"
             ],
             "fallthrough": true
         },
         {
             "type": "CommonJS",
             "globs": [
-                "result/bin/server/**/*.js"
+                "server/**/*.js"
             ],
             "fallthrough": true
         },
         {
             "type": "Text",
             "globs": [
-                "result/bin/server/**/*.html"
+                "server/**/*.html"
             ],
             "fallthrough": true
         }
