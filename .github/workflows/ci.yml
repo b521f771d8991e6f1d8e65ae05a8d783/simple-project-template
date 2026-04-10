@@ -36,6 +36,13 @@ jobs:
           name: result-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}
           path: result
 
+      - name: Log in to GHCR 🔑
+        uses: docker/login-action@main
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Push docker image 🐋
         if: |
           matrix.runner.platform == 'linux' && (
@@ -51,14 +58,24 @@ jobs:
           time nix build .#docker-dev --out-link result-dev
 
           SHORT_SHA="${GITHUB_SHA::7}"
-          GHCR_IMAGE="ghcr.io/${{ github.repository }}"
-          GHCR_IMAGE="ghcr.io/${{ github.repository }}-dev"
-          CREDS="${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
+          GHCR_PROD="ghcr.io/${{ github.repository }}"
+          GHCR_DEV="ghcr.io/${{ github.repository }}-dev"
 
-          nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-prod "docker://$GHCR_IMAGE:$SHORT_SHA"
-          nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-prod "docker://$GHCR_IMAGE:latest"
-          nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-dev "docker://$GHCR_IMAGE:$SHORT_SHA"
-          nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-dev "docker://$GHCR_IMAGE:latest"
+          docker load < result-prod
+          PROD_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | head -1)
+          docker tag "$PROD_IMAGE" "$GHCR_PROD:$SHORT_SHA"
+          docker tag "$PROD_IMAGE" "$GHCR_PROD:latest"
+          docker push "$GHCR_PROD:$SHORT_SHA"
+          docker push "$GHCR_PROD:latest" &
+
+          docker load < result-dev
+          DEV_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -v "^ghcr.io" | head -1)
+          docker tag "$DEV_IMAGE" "$GHCR_DEV:$SHORT_SHA"
+          docker tag "$DEV_IMAGE" "$GHCR_DEV:latest"
+          docker push "$GHCR_DEV:$SHORT_SHA"
+          docker push "$GHCR_DEV:latest" &
+
+          wait
 
       - name: Deploy to Cloudflare 🪂
         if: matrix.runner.arch == 'x86_64'
