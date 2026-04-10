@@ -1,14 +1,12 @@
 import { View, StyleSheet } from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Colors } from "@/constants/theme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 interface DividerProps {
 	inset?: number;
 }
 
 export function Divider({ inset = 16 }: DividerProps) {
-	const colorScheme = useColorScheme();
-	const c = Colors[colorScheme];
+	const c = useThemeColors();
 
 	return (
 		<View

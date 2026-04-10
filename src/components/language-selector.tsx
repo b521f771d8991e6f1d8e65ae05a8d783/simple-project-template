@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Modal } from "react-native";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { setLanguage } from "@/redux/state/languageSlice";
 
@@ -32,8 +31,7 @@ interface LanguageSelectorProps {
 
 export function LanguageSelector({ selected, onSelect }: LanguageSelectorProps) {
 	const [open, setOpen] = useState(false);
-	const colorScheme = useColorScheme() ?? "light";
-	const c = Colors[colorScheme];
+	const c = useThemeColors();
 	const dispatch = useAppDispatch();
 	const reduxLang = useAppSelector((state) => state.language.code);
 

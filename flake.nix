@@ -158,10 +158,10 @@
               mkdir -p .cargo
               cp ${cargoVendorConfig} .cargo/config.toml
 
-              echo "${version}" > VERSION
-              npm run build:web
-              npm run build:node
-            '';
+            echo "${version}" > VERSION
+
+            npm run build:web
+          '';
 
             outputs = ["out" "deps"];
 

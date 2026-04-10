@@ -34,14 +34,3 @@ AI-assisted live editing. Users suggest changes via chat; Claude edits a source 
 | `SMTP_URL` | SMTP connection string |
 
 Apply a patch: `xzcat dream.patch.xz | git apply`
-
-## Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Dev server + Dream Mode |
-| `npm run build:web` | Node.js + Cloudflare Workers |
-| `npm run build:tauri` | Tauri desktop app |
-| `npm run test` | All tests |
-| `npm run tag` | CalVer signed tag |
-| `npm run generate:icons` | Regenerate icons |

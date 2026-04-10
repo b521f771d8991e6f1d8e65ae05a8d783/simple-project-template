@@ -3,7 +3,7 @@ import { createRequestHandler, type RequestHandler } from "expo-server/adapter/w
 // https://developers.cloudflare.com/workers/runtime-apis/nodejs/ - node:sqlite will be supported
 
 const handler: RequestHandler = createRequestHandler({
-	build: "./dist/server",
+	build: "./server",
 });
 
 export default { fetch: handler };

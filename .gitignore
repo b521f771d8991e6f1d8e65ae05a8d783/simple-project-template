@@ -43,7 +43,7 @@ app-example
 /android
 
 # for nixpkgs
-/result
+/result*
 /VERSION
 
 /.wrangler
@@ -57,3 +57,4 @@ app-example
 /.cmake-wasm
 /gen
 /.env.keys
+/.cmake*
