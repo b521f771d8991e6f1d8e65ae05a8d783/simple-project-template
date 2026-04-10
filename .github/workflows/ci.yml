@@ -1,4 +1,4 @@
-# CI using nix
+# CI using nix, as fast as possible
 #
 # Secrets required:
 #   CLOUDFLARE_API_TOKEN   — Cloudflare API token with Workers:Edit permission
@@ -23,6 +23,13 @@ jobs:
       - uses: actions/checkout@main
       - uses: nixbuild/nix-quick-install-action@master
 
+      - uses: actions/cache@main
+        with:
+          path: /nix
+          key: nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-${{ hashFiles('flake.lock') }}
+          restore-keys: |
+            nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-
+
       - run: nix build .
 
       - name: Upload build artifact 📦
@@ -31,38 +38,25 @@ jobs:
           name: result-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}
           path: result
 
-      - name: Log in to GHCR 🔑
-        uses: docker/login-action@master
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Load and push docker image 🚀
+      - name: Push docker image 🚀
         if: matrix.runner.platform == 'linux'
         run: |
           nix build .#docker --out-link result-prod
-          docker load < result-prod
           SHORT_SHA="${GITHUB_SHA::7}"
           GHCR_IMAGE="ghcr.io/${{ github.repository }}"
-          LOADED_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | head -1)
-          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:$SHORT_SHA"
-          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:latest"
-          docker push "$GHCR_IMAGE:$SHORT_SHA"
-          docker push "$GHCR_IMAGE:latest"
+          CREDS="${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
+          nix run nixpkgs#skopeo -- copy --dest-creds "$CREDS" oci-archive:result-prod "docker://$GHCR_IMAGE:$SHORT_SHA"
+          nix run nixpkgs#skopeo -- copy --dest-creds "$CREDS" oci-archive:result-prod "docker://$GHCR_IMAGE:latest"
 
-      - name: Load and push docker-dev image 🚀
+      - name: Push docker-dev image 🚀
         if: matrix.runner.platform == 'linux'
         run: |
           nix build .#docker-dev --out-link result-dev
-          docker load < result-dev
           SHORT_SHA="${GITHUB_SHA::7}"
           GHCR_IMAGE="ghcr.io/${{ github.repository }}-dev"
-          LOADED_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -v "^ghcr.io" | head -1)
-          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:$SHORT_SHA"
-          docker tag "$LOADED_IMAGE" "$GHCR_IMAGE:latest"
-          docker push "$GHCR_IMAGE:$SHORT_SHA"
-          docker push "$GHCR_IMAGE:latest"
+          CREDS="${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
+          nix run nixpkgs#skopeo -- copy --dest-creds "$CREDS" oci-archive:result-dev "docker://$GHCR_IMAGE:$SHORT_SHA"
+          nix run nixpkgs#skopeo -- copy --dest-creds "$CREDS" oci-archive:result-dev "docker://$GHCR_IMAGE:latest"
 
       - name: Deploy to Cloudflare 🪂
         if: matrix.runner.arch == 'x86_64'

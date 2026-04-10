@@ -1,42 +1,36 @@
 {
-    // Cloudflare Workers deployment
-    // Wrangler bundles src/worker.ts. Static assets from result/bin/client/ (expo export).
     "$schema": "node_modules/wrangler/config-schema.json",
-    "main": "../../src/worker.ts",
+    "main": "result/bin/worker.js",
     "compatibility_date": "2026-01-28",
     "compatibility_flags": [
         "nodejs_compat"
     ],
     "workers_dev": true,
     "preview_urls": true,
-    // base_dir is result/bin — all paths (assets, rules, worker build) are relative to it.
-    // main escapes back to src/ via ../../
     "base_dir": "result/bin",
     "find_additional_modules": true,
-    // Static web assets (expo export --platform web -> result/bin/client)
     "assets": {
-        "directory": "client"
+        "directory": "result/bin/client"
     },
-    // Include Expo server build output (result/bin/server/) in the worker bundle
     "rules": [
         {
             "type": "Text",
             "globs": [
-                "server/**/*.json"
+                "result/bin/server/**/*.json"
             ],
             "fallthrough": true
         },
         {
             "type": "CommonJS",
             "globs": [
-                "server/**/*.js"
+                "result/bin/server/**/*.js"
             ],
             "fallthrough": true
         },
         {
             "type": "Text",
             "globs": [
-                "server/**/*.html"
+                "result/bin/server/**/*.html"
             ],
             "fallthrough": true
         }
