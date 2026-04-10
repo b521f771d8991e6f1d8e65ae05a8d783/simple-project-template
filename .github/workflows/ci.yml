@@ -79,10 +79,10 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             if [ "${{ github.ref }}" = "refs/heads/main" ]; then
               # Production: deploy to live traffic
-              npx wrangler -- deploy --name "$PROJECT_NAME"
+              npx wrangler deploy --name "$PROJECT_NAME"
             else
               # Preview: upload version with branch alias (no production traffic)
-              npx wrangler -- versions upload --name "$PROJECT_NAME" \
+              npx wrangler versions upload --name "$PROJECT_NAME" \
                 --tag "${{ github.ref_name }}" \
                 --message "Branch: ${{ github.ref_name }}"
             fi
