@@ -131,6 +131,7 @@
             nativeBuildInputs = with pkgs; [
               git
               pkg-config
+              wrangler
 
               # Objective C/++ Toolchain
               clang
