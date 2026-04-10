@@ -276,10 +276,25 @@ export function getImageSource(key: string): ReturnType<typeof require> | null {
 /** Dark preset backgrounds — pattern uses low-opacity white. */
 const DARK_BG_COLORS = new Set([
 	"#4a4a52", "#52525b", "#3d5166", "#3a5244", "#5b4a6e", "#2e4f6e",
+	"#002395", "#003476", // French Navy, Greek Lazure
+	"#002868", "#6d0717", "#5f0013", "#001f6b", "#7a1516",
+	"#004d25", "#003d66", "#005421", "#7a4a00", "#665c00", "#003d24",
 ]);
 
 /** Vivid/saturated backgrounds (e.g. Austrian Red) — pattern uses higher-opacity white. */
-const VIVID_BG_COLORS = new Set(["#c8102e"]);
+const VIVID_BG_COLORS = new Set([
+	"#c8102e", // Austrian Red
+	"#bc002d", // Japanese Crimson
+	"#0038b8", // Hebrew Blue
+	"#ef2b2d", // Norwegian Red
+	"#009246", // Italian Emerald
+	"#006aa7", // Swedish Cobalt
+	"#009c3b", // Brazilian Jade
+	"#ff9933", // Indian Saffron
+	"#ffcc00", // German Gold
+	"#007a4d", // South African Green
+	"#b22234", // American Red
+]);
 
 /**
  * Returns the color to use for SVG pattern nodes/lines.
@@ -297,7 +312,6 @@ export const COLOR_PRESETS: { label: string; value: string | null; dark?: boolea
 	// Light
 	{ label: "Whispering White",  value: "#ffffff" },
 	{ label: "Serene Silver",     value: "#f5f5f7" },
-	{ label: "Subtle Smoke",      value: "#f1f5f9" },
 	{ label: "Immaculate Ice",    value: "#e8f0fe" },
 	{ label: "Sheer Sky",         value: "#dbeafe" },
 	{ label: "Misty Mint",        value: "#ecfdf5" },
@@ -307,10 +321,19 @@ export const COLOR_PRESETS: { label: string; value: string | null; dark?: boolea
 	{ label: "Bashful Blush",     value: "#fce7f3" },
 	{ label: "Radiant Rose",      value: "#ffe4e6" },
 	{ label: "Lush Lilac",        value: "#f3e8ff" },
-	{ label: "Lovely Linen",      value: "#faf5ef" },
 	{ label: "Sunlit Sand",       value: "#f5f0e8" },
 	{ label: "Stellar Steel",     value: "#d6e8f7" },
 	{ label: "Austrian Red",      value: "#c8102e" },
+	{ label: "Japanese Crimson",  value: "#bc002d" },
+	{ label: "Hebrew Blue",       value: "#0038b8" },
+	{ label: "Norwegian Red",     value: "#ef2b2d" },
+	{ label: "Italian Emerald",   value: "#009246" },
+	{ label: "Swedish Cobalt",    value: "#006aa7" },
+	{ label: "Brazilian Jade",    value: "#009c3b" },
+	{ label: "Indian Saffron",    value: "#ff9933" },
+	{ label: "German Gold",       value: "#ffcc00" },
+	{ label: "South African Green", value: "#007a4d" },
+	{ label: "American Red",      value: "#b22234" },
 	// Dark
 	{ label: "Grounded Graphite", value: "#4a4a52", dark: true },
 	{ label: "Cool Charcoal",   value: "#52525b", dark: true },
@@ -318,4 +341,17 @@ export const COLOR_PRESETS: { label: string; value: string | null; dark?: boolea
 	{ label: "Faded Forest",    value: "#3a5244", dark: true },
 	{ label: "Pensive Plum",    value: "#5b4a6e", dark: true },
 	{ label: "Opulent Ocean",   value: "#2e4f6e", dark: true },
+	{ label: "French Navy",       value: "#002395", dark: true },
+	{ label: "Greek Lazure",      value: "#003476", dark: true },
+	{ label: "American Blue",     value: "#002868", dark: true },
+	{ label: "Austrian Burgundy", value: "#6d0717", dark: true },
+	{ label: "Japanese Maroon",   value: "#5f0013", dark: true },
+	{ label: "Hebrew Midnight",   value: "#001f6b", dark: true },
+	{ label: "Norwegian Ruby",    value: "#7a1516", dark: true },
+	{ label: "Italian Hunter",    value: "#004d25", dark: true },
+	{ label: "Swedish Night",     value: "#003d66", dark: true },
+	{ label: "Brazilian Rainforest", value: "#005421", dark: true },
+	{ label: "Indian Spice",      value: "#7a4a00", dark: true },
+	{ label: "German Amber",      value: "#665c00", dark: true },
+	{ label: "South African Moss", value: "#003d24", dark: true },
 ];
