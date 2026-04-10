@@ -11,7 +11,6 @@ on:
 
 jobs:
   build-and-deploy:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     strategy:
       matrix:
         runner:
