@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         runner:
-          - { os: ubuntu-latest, platform: linux, arch: x86_64 }
+          - { os: ubuntu-24.04, platform: linux, arch: x86_64 }
     runs-on: ${{ matrix.runner.os }}
     permissions:
       contents: read
@@ -47,8 +47,8 @@ jobs:
             github.ref == 'refs/heads/beta'
           )
         run: |
-          nix build .#docker --out-link result-prod
-          nix build .#docker-dev --out-link result-dev
+          time nix build .#docker --out-link result-prod
+          time nix build .#docker-dev --out-link result-dev
 
           SHORT_SHA="${GITHUB_SHA::7}"
           GHCR_IMAGE="ghcr.io/${{ github.repository }}"
