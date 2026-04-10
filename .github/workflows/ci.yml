@@ -8,8 +8,6 @@ name: Rapid Deploy 🚀
 on:
   workflow_dispatch:
   push:
-    tags:
-      - "v*"
 
 jobs:
   build-and-deploy:
@@ -35,7 +33,7 @@ jobs:
           path: result
 
       - name: Log in to GHCR 🔑
-        uses: docker/login-action@main
+        uses: docker/login-action@master
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
