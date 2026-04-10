@@ -41,7 +41,7 @@ All build orchestration uses npm scripts.
 
 | Script | Purpose |
 |---|---|
-| `build:node` / `build:node:dev` | wasm → web → server (Node.js/Docker) |
+| `build:web` / `build:web:dev` | wasm → web → server (Node.js/Docker) |
 | `build:cloudflare-worker` / `build:cloudflare-worker:dev` | wasm → web → worker (Cloudflare) |
 
 `:dev` targets use debug cargo + sourcemaps. Release targets are optimized + minified.

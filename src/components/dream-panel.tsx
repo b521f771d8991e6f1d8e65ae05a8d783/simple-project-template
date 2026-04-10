@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { ScrollView, TextInput, Pressable, View, Text, StyleSheet, ActivityIndicator, Platform, Modal, PanResponder, Dimensions } from "react-native";
 import Markdown from "react-native-markdown-display";
 
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import { saveMessage, loadMessages, clearHistory, type DreamMessage } from "@/lib/dream-history";
 import { useTranslation } from "@/lib/i18n";
 
@@ -26,7 +26,7 @@ async function dreamFetch(body: Record<string, unknown>) {
 export function DreamPanel({ visible, onClose }: DreamPanelProps) {
 	const colorScheme = useColorScheme() ?? "light";
 	const isDark = colorScheme === "dark";
-	const c = Colors[colorScheme];
+	const c = useThemeColors();
 	const t = useTranslation();
 	const [messages, setMessages] = useState<DreamMessage[]>([]);
 	const [input, setInput] = useState("");

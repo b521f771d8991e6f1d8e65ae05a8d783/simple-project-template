@@ -12,8 +12,8 @@ import { LANGUAGES } from "@/components/language-selector";
 import { Logo } from "@/components/logo";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useTranslation } from "@/lib/i18n";
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { toggleNavPosition, setThemeMode } from "@/redux/state/themeSlice";
 import { setLanguage } from "@/redux/state/languageSlice";
@@ -47,7 +47,7 @@ function NavBar({
 	state, descriptors, navigation, appMode, onDreamPress, dreamOpen,
 }: BottomTabBarProps & { appMode: AppMode; onDreamPress: () => void; dreamOpen: boolean }) {
 	const colorScheme = useColorScheme();
-	const c = Colors[colorScheme];
+	const c = useThemeColors();
 	const t = useTranslation();
 	const dispatch = useAppDispatch();
 	const [menuOpen, setMenuOpen] = useState(false);

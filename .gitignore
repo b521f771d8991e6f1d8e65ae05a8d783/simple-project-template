@@ -43,7 +43,7 @@ app-example
 /android
 
 # for nixpkgs
-/result
+/result*
 /VERSION
 
 /.wrangler

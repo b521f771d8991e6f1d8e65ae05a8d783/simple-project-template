@@ -53,6 +53,6 @@ xzcat dream.patch.xz | git apply
 |---------|-------------|
 | `npm run dev` | Metro dev server |
 | `npm run build` | Production build (Node.js) |
-| `npm run build:worker` | Production build (Cloudflare Workers) |
+| `npm run build:web` | Production build (Cloudflare Workers) |
 | `npm run tag` | Create CalVer signed git tag |
 | `npm run generate:icons` | Regenerate icons from `logo.svg` |

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { ScrollView, View, Text, Pressable, TextInput, StyleSheet, Image } from "react-native";
-import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import { useBackground } from "@/hooks/use-background";
 import { PATTERN_OPTIONS, COLOR_PRESETS, IMAGE_PRESETS, getPatternRenderer, getPatternColor } from "@/lib/background-patterns";
 import { useAppDispatch, useAppSelector } from "@/redux/store";
 import { setThemeMode } from "@/redux/state/themeSlice";
+import { setAccentOverride } from "@/redux/state/backgroundSlice";
 import Svg, { Rect as SvgRect } from "react-native-svg";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -28,7 +29,7 @@ function SectionHeader({ children, color }: { children: string; color: string })
 
 function Row({ children, label }: { children: React.ReactNode; label?: string }) {
 	const colorScheme = useColorScheme();
-	const c = Colors[colorScheme];
+	const c = useThemeColors();
 	return (
 		<View style={styles.row}>
 			{children}
@@ -39,7 +40,7 @@ function Row({ children, label }: { children: React.ReactNode; label?: string })
 
 export default function GalleryScreen() {
 	const colorScheme = useColorScheme();
-	const c = Colors[colorScheme];
+	const c = useThemeColors();
 	const dark = colorScheme === "dark";
 	const bg = useBackground();
 	const dispatch = useAppDispatch();
@@ -396,7 +397,7 @@ export default function GalleryScreen() {
 								return (
 									<View key={preset.label} style={styles.colorItem}>
 										<Pressable
-											onPress={() => { bg.setImage(null); bg.setColor(preset.value); dispatch(setThemeMode("light")); }}
+											onPress={() => { bg.setImage(null); bg.setColor(preset.value); dispatch(setThemeMode("light")); dispatch(setAccentOverride(preset.accentOverride ?? null)); }}
 											style={[
 												styles.colorTile,
 												{
@@ -420,7 +421,7 @@ export default function GalleryScreen() {
 								return (
 									<View key={preset.label} style={styles.colorItem}>
 										<Pressable
-											onPress={() => { bg.setImage(null); bg.setColor(preset.value); dispatch(setThemeMode("dark")); }}
+											onPress={() => { bg.setImage(null); bg.setColor(preset.value); dispatch(setThemeMode("dark")); dispatch(setAccentOverride(preset.accentOverride ?? null)); }}
 											style={[
 												styles.colorTile,
 												{

@@ -48,7 +48,7 @@
 
             echo "${version}" > VERSION
 
-            npm run build:node
+            npm run build:web
           '';
 
           outputs = ["out" "deps"];

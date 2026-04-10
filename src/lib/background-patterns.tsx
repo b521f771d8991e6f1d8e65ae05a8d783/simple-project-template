@@ -308,7 +308,7 @@ export function getPatternColor(bgColor: string | null, accentColor: string): st
 	return accentColor;
 }
 
-export const COLOR_PRESETS: { label: string; value: string | null; dark?: boolean }[] = [
+export const COLOR_PRESETS: { label: string; value: string | null; dark?: boolean; accentOverride?: string }[] = [
 	// Light
 	{ label: "Whispering White",  value: "#ffffff" },
 	{ label: "Serene Silver",     value: "#f5f5f7" },
@@ -334,6 +334,8 @@ export const COLOR_PRESETS: { label: string; value: string | null; dark?: boolea
 	{ label: "German Gold",       value: "#ffcc00" },
 	{ label: "South African Green", value: "#007a4d" },
 	{ label: "American Red",      value: "#b22234" },
+	{ label: "Upper Austrian Gold", value: "#ffffff", accentOverride: "#baa47e" },
+	{ label: "Upper Austrian Red",  value: "#ffffff", accentOverride: "#e22933" },
 	// Dark
 	{ label: "Grounded Graphite", value: "#4a4a52", dark: true },
 	{ label: "Cool Charcoal",   value: "#52525b", dark: true },

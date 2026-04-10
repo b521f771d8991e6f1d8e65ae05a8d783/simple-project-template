@@ -1,8 +1,7 @@
 import { Image, Platform, StyleSheet } from "react-native";
 import Svg, { Rect } from "react-native-svg";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useBackground } from "@/hooks/use-background";
-import { Colors } from "@/constants/theme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import { getPatternRenderer, getImageSource, getPatternColor } from "@/lib/background-patterns";
 
 const fillStyle = Platform.OS === "web"
@@ -10,8 +9,7 @@ const fillStyle = Platform.OS === "web"
 	: [StyleSheet.absoluteFill, { zIndex: -1 }];
 
 export function BackgroundLayer() {
-	const colorScheme = useColorScheme();
-	const c = Colors[colorScheme];
+	const c = useThemeColors();
 	const { pattern, color, image } = useBackground();
 
 	// Image backgrounds take full priority — no color or pattern overlay
