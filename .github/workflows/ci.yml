@@ -38,26 +38,30 @@ jobs:
           name: result-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}
           path: result
 
-      - name: Push docker image 🚀
-        if: matrix.runner.platform == 'linux'
+      - name: Push docker image 🐋
+        if: |
+          matrix.runner.platform == 'linux' && (
+            github.event_name == 'workflow_dispatch' ||
+            github.ref == 'refs/heads/main' ||
+            github.ref == 'refs/heads/master' ||
+            github.ref == 'refs/heads/dev' ||
+            github.ref == 'refs/heads/stable' ||
+            github.ref == 'refs/heads/beta'
+          )
         run: |
           nix build .#docker --out-link result-prod
+          nix build .#docker-dev --out-link result-dev
+
           SHORT_SHA="${GITHUB_SHA::7}"
           GHCR_IMAGE="ghcr.io/${{ github.repository }}"
+          GHCR_IMAGE="ghcr.io/${{ github.repository }}-dev"
           CREDS="${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
+
           nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-prod "docker://$GHCR_IMAGE:$SHORT_SHA"
           nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-prod "docker://$GHCR_IMAGE:latest"
+          nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-dev "docker://$GHCR_IMAGE:$SHORT_SHA"
+          nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-dev "docker://$GHCR_IMAGE:latest"
 
-      #- name: Push docker-dev image 🚀
-      #  if: matrix.runner.platform == 'linux'
-      #  run: |
-      #    nix build .#docker-dev --out-link result-dev
-      #    SHORT_SHA="${GITHUB_SHA::7}"
-      #    GHCR_IMAGE="ghcr.io/${{ github.repository }}-dev"
-      #    CREDS="${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
-      #    nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-dev "docker://$GHCR_IMAGE:$SHORT_SHA"
-      #    nix run nixpkgs#skopeo -- copy --insecure-policy --dest-creds "$CREDS" docker-archive:result-dev "docker://$GHCR_IMAGE:latest"
-#
       #- name: Deploy to Cloudflare 🪂
       #  if: matrix.runner.arch == 'x86_64'
       #  run: |
