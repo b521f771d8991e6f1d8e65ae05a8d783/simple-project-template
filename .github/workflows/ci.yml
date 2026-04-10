@@ -22,15 +22,13 @@ jobs:
     steps:
       - uses: actions/checkout@main
       - uses: nixbuild/nix-quick-install-action@master
-
-      - uses: actions/cache@main
+      - uses: nix-community/cache-nix-action@main
         with:
-          path: /nix
-          key: nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-${{ hashFiles('flake.lock') }}
-          restore-keys: |
-            nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-
+          primary-key: nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ matrix.runner.platform }}-${{ matrix.runner.arch }}-
+          purge: true
 
-      - run: nix build .
+      - run: nix build . -L --show-trace
 
       - name: Upload build artifact 📦
         uses: actions/upload-artifact@main
