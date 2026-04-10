@@ -57,23 +57,19 @@ jobs:
           time nix build .#docker --out-link result-prod
           time nix build .#docker-dev --out-link result-dev
 
-          SHORT_SHA="${GITHUB_SHA::7}"
+          BRANCH_TAG=$(echo "${{ github.ref_name }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g')
           GHCR_PROD="ghcr.io/${{ github.repository }}"
           GHCR_DEV="ghcr.io/${{ github.repository }}-dev"
 
           docker load < result-prod
           PROD_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | head -1)
-          docker tag "$PROD_IMAGE" "$GHCR_PROD:$SHORT_SHA"
-          docker tag "$PROD_IMAGE" "$GHCR_PROD:latest"
-          docker push "$GHCR_PROD:$SHORT_SHA"
-          docker push "$GHCR_PROD:latest" &
+          docker tag "$PROD_IMAGE" "$GHCR_PROD:$BRANCH_TAG"
+          docker push "$GHCR_PROD:$BRANCH_TAG" &
 
           docker load < result-dev
           DEV_IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -v "^ghcr.io" | head -1)
-          docker tag "$DEV_IMAGE" "$GHCR_DEV:$SHORT_SHA"
-          docker tag "$DEV_IMAGE" "$GHCR_DEV:latest"
-          docker push "$GHCR_DEV:$SHORT_SHA"
-          docker push "$GHCR_DEV:latest" &
+          docker tag "$DEV_IMAGE" "$GHCR_DEV:$BRANCH_TAG"
+          docker push "$GHCR_DEV:$BRANCH_TAG" &
 
           wait
 
